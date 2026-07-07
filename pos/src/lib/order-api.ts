@@ -81,5 +81,15 @@ export interface SyncOrderRequest {
 }
 
 export const syncOrder = async (data: SyncOrderRequest) => {
-  return call.post( 'ury.ury.doctype.ury_order.ury_order.sync_order',data);
+  const payload: SyncOrderRequest = {
+    ...data,
+    last_invoice: data.last_invoice ?? '',
+    invoice: data.invoice ?? '',
+    table: data.table ?? '',
+    comments: data.comments ?? '',
+    room: data.room ?? '',
+    aggregator_id: data.aggregator_id ?? '',
+  };
+
+  return call.post('ury.ury.doctype.ury_order.ury_order.sync_order', payload);
 }; 

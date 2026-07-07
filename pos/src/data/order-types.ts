@@ -40,6 +40,13 @@ export const DINE_IN="Dine In"
 export const DEFAULT_ORDER_TYPE="Take Away"
 export const DEFAULT_PAYMENT_MODE="Cash"
 
+/** Default walk-in customers per order type (ERPNext Customer name). */
+export const ORDER_TYPE_DEFAULT_CUSTOMER: Partial<Record<OrderType, string>> = {
+  "Dine In": "Dine in",
+  "Take Away": "Take Away",
+  "Delivery": "Delivery",
+};
+
 export type OrderStatusType = "Draft" | "Unbilled" | "Recently Paid" | "Paid" | "Consolidated" | "Return";
 
 // Base status types that are always available

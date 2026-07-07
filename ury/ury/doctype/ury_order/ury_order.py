@@ -73,16 +73,9 @@ def get_order_invoice(table=None, invoiceNo=None, order_type=None, is_payment=No
         )
 
     else:
-
-        if is_payment == "Payments":
-            invoice_name = frappe.get_value(
-                "POS Invoice", dict(restaurant_table=table, docstatus=0, name=invoiceNo)
-            )
-            
-        else:
-            invoice_name = frappe.get_value(
-                "POS Invoice", dict(docstatus=0, name=invoiceNo)
-            )
+        invoice_name = frappe.get_value(
+            "POS Invoice", dict(docstatus=0, name=invoiceNo)
+        )
             
         if invoice_name:
             invoice = frappe.get_doc("POS Invoice", invoice_name)
@@ -560,7 +553,7 @@ def make_invoice(customer, payments, cashier, pos_profile,owner, additionalDisco
     invoice = get_order_invoice(table, invoice, order_type, "Payments")
 
     if table:
-        restaurant = get_restaurant_and_menu_name(table)
+        _branch, _menu_name, restaurant = get_restaurant_and_menu_name(table)
         invoice.restaurant = restaurant
 
     invoice.customer = customer
@@ -568,8 +561,7 @@ def make_invoice(customer, payments, cashier, pos_profile,owner, additionalDisco
     invoice.additional_discount_percentage=additionalDiscount
     invoice.calculate_taxes_and_totals()
 
-    for pay in invoice.payments:
-        pay.delete(pay.mode_of_payment)
+    invoice.set("payments", [])
 
     for d in payments:
         invoice.append(

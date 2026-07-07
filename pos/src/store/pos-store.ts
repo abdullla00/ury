@@ -5,7 +5,7 @@ import { getRestaurantMenu, getAggregatorMenu, MenuItem as APIMenuItem } from '.
 import { getCurrencyInfo, PosProfileCombined, getCombinedPosProfile } from '../lib/pos-profile-api';
 import { getMenuCourses } from '../lib/menu-course-api';
 import { getCustomerGroups, getCustomerTerritories } from '../lib/customer-api';
-import { DEFAULT_ORDER_TYPE, OrderType } from '../data/order-types';
+import { DEFAULT_ORDER_TYPE, ORDER_TYPE_DEFAULT_CUSTOMER, OrderType } from '../data/order-types';
 import { getTableOrder, TableOrder } from '../lib/order-api';
 import { getPaymentModes } from '../lib/payment-api';
 
@@ -181,7 +181,13 @@ export const usePOSStore = create<POSStore>((set, get) => ({
   selectedTable: null,
   selectedRoom: null,
   searchQuery: '',
-  selectedCustomer: null,
+  selectedCustomer: ORDER_TYPE_DEFAULT_CUSTOMER[DEFAULT_ORDER_TYPE]
+    ? {
+        id: ORDER_TYPE_DEFAULT_CUSTOMER[DEFAULT_ORDER_TYPE]!,
+        name: ORDER_TYPE_DEFAULT_CUSTOMER[DEFAULT_ORDER_TYPE]!,
+        phone: '',
+      }
+    : null,
   selectedOrderType: DEFAULT_ORDER_TYPE as OrderType,
   quickFilter: "all",
   selectedItem: null,
@@ -465,12 +471,16 @@ export const usePOSStore = create<POSStore>((set, get) => ({
   },
   setSelectedOrderType: (type) => {
     const { fetchMenuItems } = get();
-    
+    const defaultCustomerName = ORDER_TYPE_DEFAULT_CUSTOMER[type];
+
     set({ 
       activeOrders: [],
       selectedOrderType: type,
       isUpdatingOrder: false,
-      orderId: null
+      orderId: null,
+      selectedCustomer: defaultCustomerName
+        ? { id: defaultCustomerName, name: defaultCustomerName, phone: '' }
+        : null,
     });
     
     if (type !== 'Aggregators') {
