@@ -49,7 +49,7 @@ export async function getTableOrder(table_no: string): Promise<TableOrder> {
     const res = await call.get('ury.ury.doctype.ury_order.ury_order.get_order_invoice', { 
       table: table_no
     });
-    return res as TableOrder;
+    return { message: res.message ?? null };
   } catch (error) {
     console.error('Error fetching table order:', error);
     return { message: null };

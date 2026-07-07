@@ -11,12 +11,18 @@ import { usePOSStore } from './store/pos-store';
 import { useEffect } from 'react';
 import { getActiveLanguage } from './i18n';
 
+const POS_PROFILE_CACHE_VERSION = '3';
+
 function App() {
   const {
     initializeApp
   } = usePOSStore();
   
   useEffect(() => {
+    if (sessionStorage.getItem('posProfileCacheVersion') !== POS_PROFILE_CACHE_VERSION) {
+      sessionStorage.removeItem('posProfile');
+      sessionStorage.setItem('posProfileCacheVersion', POS_PROFILE_CACHE_VERSION);
+    }
     initializeApp();
   }, [initializeApp]);
 

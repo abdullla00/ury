@@ -136,7 +136,10 @@ def refresh_outdated_pos_opening_entries(branch):
     updated = []
     for opening in openings:
         period_start = opening.get("period_start_date")
-        if not period_start or frappe.utils.get_date_str(period_start) == today:
+        period_date = frappe.utils.get_date_str(period_start) if period_start else None
+        posting_date = frappe.db.get_value("POS Opening Entry", opening.name, "posting_date")
+        posting_date = frappe.utils.get_date_str(posting_date) if posting_date else None
+        if period_date == today and posting_date == today:
             continue
         frappe.db.sql(
             """
@@ -498,6 +501,59 @@ def getCashier(room):
     return cashier       
     
 
+def get_pos_profile_for_branch(branch):
+    """Resolve the POS Profile for a branch, preferring open shift and enabled profiles."""
+    user = frappe.session.user
+    open_filters = {"branch": branch, "status": "Open", "docstatus": 1}
+
+    for filters in ({**open_filters, "user": user}, open_filters):
+        open_profile = frappe.db.get_value(
+            "POS Opening Entry",
+            filters,
+            "pos_profile",
+            order_by="period_start_date desc",
+        )
+        if open_profile and not frappe.db.get_value("POS Profile", open_profile, "disabled"):
+            return open_profile
+
+    enabled_profiles = frappe.get_all(
+        "POS Profile",
+        filters={"branch": branch, "disabled": 0},
+        fields=["name"],
+        order_by="modified desc",
+    )
+    if enabled_profiles:
+        for profile in enabled_profiles:
+            if frappe.db.exists(
+                "POS Profile User", {"parent": profile.name, "user": user, "parenttype": "POS Profile"}
+            ):
+                return profile.name
+        return enabled_profiles[0].name
+
+    return None
+
+
+def get_profile_cashier_and_owner(pos_profile_doc):
+    user = frappe.session.user
+    owner = None
+    cashier = None
+
+    for user_details in pos_profile_doc.applicable_for_users:
+        if user_details.custom_main_cashier:
+            owner = user_details.user
+        if user_details.user == user:
+            cashier = user_details.user
+
+    if not cashier and pos_profile_doc.applicable_for_users:
+        cashier = pos_profile_doc.applicable_for_users[0].user
+    if not owner:
+        owner = cashier or user
+    if not cashier:
+        cashier = user
+
+    return cashier, owner
+
+
 @frappe.whitelist()
 def getPosProfile():
     branchName = getBranch()
@@ -507,7 +563,7 @@ def getPosProfile():
     printer = None
     cashier = None
     owner = None
-    posProfile = frappe.db.exists("POS Profile", {"branch": branchName})
+    posProfile = get_pos_profile_for_branch(branchName)
     if not posProfile:
         frappe.throw(_("No POS Profile found for branch {0}").format(branchName))
     pos_profiles = frappe.get_doc("POS Profile", posProfile)
@@ -560,8 +616,7 @@ def getPosProfile():
                     cashier = pos_opened_cashier    
                 
         else:    
-            cashier = get_cashier.applicable_for_users[0].user
-            owner = get_cashier.applicable_for_users[0].user
+            cashier, owner = get_profile_cashier_and_owner(get_cashier)
         
         qz_print = pos_profiles.qz_print
         print_type = None

@@ -13,7 +13,7 @@ import { syncOrder } from '../lib/order-api';
 import { useRootStore } from '../store/root-store';
 import type { RootState } from '../store/root-store';
 import { showToast } from './ui/toast';
-import { DINE_IN } from '../data/order-types';
+import { DINE_IN, DEFAULT_PAYMENT_MODE } from '../data/order-types';
 import { t } from '../i18n';
 
 const OrderPanel = () => {
@@ -96,12 +96,17 @@ const OrderPanel = () => {
         return;
       }
 
+      if (activeOrders.length === 0) {
+        showToast.error(t('errors.empty_cart'));
+        return;
+      }
+
       setIsSubmitting(true);
       
       const orderData = {
         items: activeOrders.map(item => ({
-          item: item.id,
-          item_name: item.name,
+          item: item.id || item.item,
+          item_name: item.name || item.item_name,
           rate: item.selectedVariant?.price || item.price,
           qty: item.quantity,
           comment: item.comment || undefined
@@ -113,9 +118,9 @@ const OrderPanel = () => {
         room: selectedRoom || undefined,
         customer: selectedOrderType === 'Aggregators' ? selectedAggregator?.customer : selectedCustomer?.name,
         aggregator_id: selectedOrderType === 'Aggregators' ? selectedAggregator?.customer : undefined,
-        cashier: posProfile.cashier,
-        owner: posProfile.owner,
-        mode_of_payment: paymentModes[0],
+        cashier: posProfile.cashier || user.name,
+        owner: posProfile.owner || posProfile.cashier || user.name,
+        mode_of_payment: paymentModes[0] || DEFAULT_PAYMENT_MODE,
         last_invoice: isUpdatingOrder ? orderId : null,
         invoice: isUpdatingOrder ? orderId : null,
         waiter: user.name,

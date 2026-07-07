@@ -178,8 +178,9 @@ def process_items_for_kot(
                     production.name,
                 )
     else:
-        frappe.throw(
-            "Create URY Production unit against POS Profile: %s " % pos_profile.name
+        frappe.log_error(
+            title="KOT skipped",
+            message=f"No URY Production unit for branch {pos_profile.branch}. Order saved without KOT.",
         )
 
 

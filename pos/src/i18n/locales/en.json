@@ -132,6 +132,7 @@
     "failed_fetch_order": "Failed to fetch order details",
     "failed_print": "Failed to print order",
     "failed_process_order": "Failed to process order",
+    "empty_cart": "Please add at least one item before submitting",
     "no_active_order": "No active order found for this table",
     "qz_host_not_set": "QZ host is not set",
     "print_failed": "Print failed: {{reason}}",

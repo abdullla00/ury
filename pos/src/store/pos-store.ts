@@ -5,7 +5,7 @@ import { getRestaurantMenu, getAggregatorMenu, MenuItem as APIMenuItem } from '.
 import { getCurrencyInfo, PosProfileCombined, getCombinedPosProfile } from '../lib/pos-profile-api';
 import { getMenuCourses } from '../lib/menu-course-api';
 import { getCustomerGroups, getCustomerTerritories } from '../lib/customer-api';
-import { DEFAULT_ORDER_TYPE, ORDER_TYPE_DEFAULT_CUSTOMER, OrderType } from '../data/order-types';
+import { DEFAULT_ORDER_TYPE, DINE_IN, ORDER_TYPE_DEFAULT_CUSTOMER, OrderType } from '../data/order-types';
 import { getTableOrder, TableOrder } from '../lib/order-api';
 import { getPaymentModes } from '../lib/payment-api';
 
@@ -244,38 +244,25 @@ export const usePOSStore = create<POSStore>((set, get) => ({
 
   fetchPosProfile: async () => {
     try {
-      const cached = sessionStorage.getItem('posProfile');
-      if (cached) {
-        const profile = JSON.parse(cached);
-        set({ 
-          posProfile: profile, 
-          profileLoading: false,
-          currency: profile.currency || 'INR'
-        });
-        if (!storage.getItem('currencySymbol')) {
-          await get().fetchCurrencySymbol();
-        }
-        return;
-      }
-
       set({ profileLoading: true, error: null });
       const combinedProfile = await getCombinedPosProfile();
-      
+
       sessionStorage.setItem('posProfile', JSON.stringify(combinedProfile));
-      set({ 
-        posProfile: combinedProfile, 
+      set({
+        posProfile: combinedProfile,
         profileLoading: false,
         currency: combinedProfile.currency || 'INR'
       });
-      
+
       if (!storage.getItem('currencySymbol')) {
         await get().fetchCurrencySymbol();
       }
     } catch (error) {
       console.error('Error fetching POS profile:', error);
-      set({ 
+      sessionStorage.removeItem('posProfile');
+      set({
         error: 'Failed to fetch POS profile',
-        profileLoading: false 
+        profileLoading: false
       });
     }
   },
@@ -479,6 +466,15 @@ export const usePOSStore = create<POSStore>((set, get) => ({
       selectedCustomer: defaultCustomerName
         ? { id: defaultCustomerName, name: defaultCustomerName, phone: '' }
         : null,
+      ...(type !== DINE_IN
+        ? {
+            selectedTable: null,
+            selectedRoom: null,
+            isUpdatingOrder: false,
+            orderId: null,
+            tableOrder: null,
+          }
+        : {}),
     });
     
     if (type !== 'Aggregators') {

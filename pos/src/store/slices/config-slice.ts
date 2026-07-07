@@ -49,27 +49,12 @@ export const createConfigSlice: StateCreator<
 > = (set, get) => ({
   ...initialState,
 
-  fetchPosProfile: async (forceRefresh = false) => {
+  fetchPosProfile: async (_forceRefresh = false) => {
     try {
       set({ isLoading: true, error: null });
 
-      // Check session storage first if not forcing refresh
-      const cached = sessionStorage.getItem('posProfile');
-      if (cached && !forceRefresh) {
-        const profile = JSON.parse(cached);
-        set({ posProfile: profile });
-        // Extract and set allowed roles from the profile
-        const allowedRoles = profile.role_allowed_for_billing?.map((role: RolePermission) => role.role) || [];
-        console.log("allowedRoles", allowedRoles);
-        get().setAllowedRoles(allowedRoles);
-        set({ isLoading: false });
-        return;
-      }
-
-      // If not in cache or forcing refresh, fetch from API
       const profile = await getCombinedPosProfile();
-      
-      // Cache the profile
+
       sessionStorage.setItem('posProfile', JSON.stringify(profile));
       set({ posProfile: profile });
 
