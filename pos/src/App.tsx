@@ -34,7 +34,7 @@ function App() {
           <Router basename="/pos">
             <div className="flex h-screen flex-col bg-gray-100 font-inter">
               <Header />
-              <div className="flex-1 overflow-hidden">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <Routes>
                   <Route path="/" element={<POS/>} />
                   <Route path="/orders" element={<Orders />} />
