@@ -129,14 +129,23 @@ const OrderPanel = () => {
       showToast.success(isUpdatingOrder ? t('success.order_updated') : t('success.order_created'));
     } catch (error) {
       console.error('Failed to sync order:', error);
-      if (error && typeof error === 'object' && '_server_messages' in error && typeof (error as any)._server_messages === 'string') {
+      const apiError = error as {
+        _server_messages?: string;
+        exception?: string;
+        message?: string;
+      };
+
+      if (apiError._server_messages) {
         try {
-          const messages = JSON.parse((error as any)._server_messages);
+          const messages = JSON.parse(apiError._server_messages);
           const messageObj = JSON.parse(messages[0]);
           showToast.error(messageObj.message || 'API error');
         } catch {
           showToast.error('API error');
         }
+      } else if (apiError.exception) {
+        const match = apiError.exception.match(/ValidationError: (.+)/);
+        showToast.error(match?.[1] || apiError.exception);
       } else if (error instanceof Error) {
         showToast.error(error.message);
       } else {

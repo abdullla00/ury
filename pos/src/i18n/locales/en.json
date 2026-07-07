@@ -83,6 +83,8 @@
   "pos": {
     "not_opened_title": "POS Not Opened",
     "not_opened_message": "Please open POS Entry to continue using the system.",
+    "outdated_opening_title": "POS Shift Expired",
+    "outdated_opening_message": "Yesterday's POS Opening Entry is still open. Close it in ERPNext Desk, then open a new entry for today.",
     "not_closed_title": "Previous POS Not Closed",
     "not_closed_message": "Please close the previous POS Entry to continue.",
     "reload_page": "Reload Page",

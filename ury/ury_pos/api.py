@@ -124,6 +124,40 @@ def getBranch():
 
     return branch_name
 
+def refresh_outdated_pos_opening_entries(branch):
+    """Roll POS opening period to today when yesterday's shift was left open."""
+    today = frappe.utils.today()
+    now = frappe.utils.now_datetime()
+    openings = frappe.get_all(
+        "POS Opening Entry",
+        fields=["name", "period_start_date"],
+        filters={"branch": branch, "status": "Open", "docstatus": 1},
+    )
+    updated = []
+    for opening in openings:
+        period_start = opening.get("period_start_date")
+        if not period_start or frappe.utils.get_date_str(period_start) == today:
+            continue
+        frappe.db.sql(
+            """
+            UPDATE `tabPOS Opening Entry`
+            SET period_start_date = %s, posting_date = %s, modified = %s
+            WHERE name = %s
+            """,
+            (now, today, now, opening.name),
+        )
+        updated.append(opening.name)
+
+    if updated:
+        frappe.db.commit()
+    return updated
+
+@frappe.whitelist()
+def refresh_pos_opening_for_today():
+    branch = getBranch()
+    updated = refresh_outdated_pos_opening_entries(branch)
+    return {"updated": updated, "status": "ok" if updated else "current"}
+
 @frappe.whitelist()
 def getBranchRoom():
     user = frappe.session.user
@@ -609,16 +643,23 @@ def posOpening():
     branchName = getBranch()
     pos_opening_list = frappe.get_all(
         "POS Opening Entry",
-        fields=["name", "docstatus", "status", "posting_date"],
-        filters={"branch": branchName},
+        fields=["name", "docstatus", "status", "period_start_date"],
+        filters={"branch": branchName, "status": "Open", "docstatus": 1},
     )
-    flag = 1
+    if not pos_opening_list:
+        return 1
+
+    today = frappe.utils.today()
     for pos_opening in pos_opening_list:
-        if pos_opening.status == "Open" and pos_opening.docstatus == 1:
-            flag = 0
-    if flag == 1:
-        frappe.msgprint(title="Message", indicator="red", msg=("Please Open POS Entry"))
-    return flag
+        period_start = pos_opening.get("period_start_date")
+        if period_start and frappe.utils.get_date_str(period_start) == today:
+            return 0
+
+    if refresh_outdated_pos_opening_entries(branchName):
+        return 0
+
+    # 2 = open entry exists but is from a previous day (ERPNext blocks new invoices)
+    return 2
 
 
 @frappe.whitelist()

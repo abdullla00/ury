@@ -4,11 +4,12 @@ import { t } from '../i18n';
 
 interface POSOpeningDialogProps {
   onReload: () => void;
-  type: 'opening' | 'closing';
+  type: 'opening' | 'closing' | 'outdated';
 }
 
 const POSOpeningDialog = ({ onReload, type }: POSOpeningDialogProps) => {
   const isOpeningIssue = type === 'opening';
+  const isOutdatedIssue = type === 'outdated';
   
   const handleSwitchToDesk = () => {
     // Get the current domain and open /app in a new tab
@@ -22,9 +23,11 @@ const POSOpeningDialog = ({ onReload, type }: POSOpeningDialogProps) => {
         <div className="text-center">
           {/* Icon */}
           <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6 ${
-            isOpeningIssue ? 'bg-red-100' : 'bg-orange-100'
+            isOutdatedIssue ? 'bg-amber-100' : isOpeningIssue ? 'bg-red-100' : 'bg-orange-100'
           }`}>
-            {isOpeningIssue ? (
+            {isOutdatedIssue ? (
+              <RefreshCw className="h-8 w-8 text-amber-600" />
+            ) : isOpeningIssue ? (
               <RefreshCw className="h-8 w-8 text-red-600" />
             ) : (
               <AlertTriangle className="h-8 w-8 text-orange-600" />
@@ -33,12 +36,20 @@ const POSOpeningDialog = ({ onReload, type }: POSOpeningDialogProps) => {
           
           {/* Title */}
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {isOpeningIssue ? t('pos.not_opened_title') : t('pos.not_closed_title')}
+            {isOutdatedIssue
+              ? t('pos.outdated_opening_title')
+              : isOpeningIssue
+                ? t('pos.not_opened_title')
+                : t('pos.not_closed_title')}
           </h2>
 
           {/* Message */}
           <p className="text-gray-600 mb-8 text-lg">
-            {isOpeningIssue ? t('pos.not_opened_message') : t('pos.not_closed_message')}
+            {isOutdatedIssue
+              ? t('pos.outdated_opening_message')
+              : isOpeningIssue
+                ? t('pos.not_opened_message')
+                : t('pos.not_closed_message')}
           </p>
 
           {/* Buttons */}

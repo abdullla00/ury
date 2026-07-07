@@ -46,7 +46,7 @@ export async function getTableCount(room: string, branch?: string): Promise<numb
     ...(branch ? [['branch', '=', branch]] : []),
   ];
   const rows = await db.getDocList(DOCTYPES.URY_TABLE, {
-    fields: ['count(name) as count'],
+    fields: [{ COUNT: '*', as: 'count' }],
     filters: filters as any,
     limit: 1,
     asDict: true,

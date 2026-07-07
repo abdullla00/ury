@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { checkPOSOpening, validatePOSClose } from '../lib/pos-opening-api';
+import { checkPOSOpening, refreshPosOpeningForToday, validatePOSClose } from '../lib/pos-opening-api';
 import { usePOSStore } from '../store/pos-store';
 import POSOpeningDialog from './POSOpeningDialog';
 import { t } from '../i18n';
@@ -8,7 +8,7 @@ interface POSOpeningProviderProps {
   children: React.ReactNode;
 }
 
-type ValidationType = 'opening' | 'closing' | null;
+type ValidationType = 'opening' | 'closing' | 'outdated' | null;
 
 const POSOpeningProvider = ({ children }: POSOpeningProviderProps) => {
   const [validationType, setValidationType] = useState<ValidationType>(null);
@@ -21,6 +21,20 @@ const POSOpeningProvider = ({ children }: POSOpeningProviderProps) => {
       
       // First check if POS is opened
       const openingResponse = await checkPOSOpening();
+      if (openingResponse.message === 2) {
+        try {
+          await refreshPosOpeningForToday();
+          const retry = await checkPOSOpening();
+          if (retry.message === 0) {
+            setValidationType(null);
+            return;
+          }
+        } catch (error) {
+          console.error('Failed to refresh outdated POS opening:', error);
+        }
+        setValidationType('outdated');
+        return;
+      }
       if (openingResponse.message === 1) {
         // POS is not opened
         setValidationType('opening');

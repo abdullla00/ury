@@ -6,7 +6,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from erpnext.controllers.queries import item_query
-from ury.ury_pos.api import getBranch, getBranchRoom
+from ury.ury_pos.api import getBranch, getBranchRoom, refresh_outdated_pos_opening_entries
 from ury.ury.api.ury_kot_generate import kot_execute
 from ury.ury.api.ury_kot_generate import process_items_for_cancel_kot
 
@@ -131,6 +131,8 @@ def sync_order(
     
     user_role = frappe.get_roles()
     posprofile = frappe.get_doc("POS Profile", pos_profile)
+
+    refresh_outdated_pos_opening_entries(posprofile.branch or getBranch())
     
     billing_user = any(
         role.role in user_role for role in posprofile.role_allowed_for_billing
