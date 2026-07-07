@@ -52,7 +52,9 @@
     "loading_order": "Chargement des détails de la commande...",
     "edit_item": "Modifier l'article",
     "add_comment": "Ajouter un commentaire",
-    "edit_comment": "Modifier le commentaire"
+    "edit_comment": "Modifier le commentaire",
+    "view_cart": "Voir le panier",
+    "items_in_cart": "{count} articles dans le panier"
   },
   "order": {
     "select_to_view": "Sélectionnez une commande pour voir les détails",

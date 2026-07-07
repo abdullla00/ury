@@ -104,48 +104,46 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="flex items-center justify-between h-16 px-6">
-        {/* Logo */}
-        <div className="flex items-center">
-        <Link to="/" className="flex items-center gap-3">
+    <header className="border-b border-gray-200 bg-white">
+      <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:gap-4 sm:px-6">
+        <div className="flex flex-shrink-0 items-center">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3">
             <img 
               src="/assets/ury/pos/ury_pos.png" 
               alt="URY POS" 
-              className="h-10 w-auto"
+              className="h-8 w-auto sm:h-10"
             />
           </Link>
         </div>
 
-        {/* Search Bar */}
-        <div className="px-4 py-2 flex-1 flex items-center max-w-2xl mx-8  bg-gray-50 hover:bg-gray-100 border border-input rounded-md">
-            <Input
-              ref={searchInputRef}
-              placeholder={searchPlaceholder}
-              className="h-fit p-0 w-full bg-transparent border-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              value={searchValue}
-              onChange={searchOnChange}
-            />
-            <div className="flex items-center gap-2 text-gray-400">
-              <Command className="w-4 h-4" />
-              <span>K</span>
-            </div>
+        <div className="mx-1 flex min-w-0 flex-1 items-center rounded-md border border-input bg-gray-50 px-3 py-2 hover:bg-gray-100 sm:mx-4 sm:max-w-2xl sm:px-4">
+          <Input
+            ref={searchInputRef}
+            placeholder={searchPlaceholder}
+            className="h-fit w-full min-w-0 border-0 bg-transparent p-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            value={searchValue}
+            onChange={searchOnChange}
+          />
+          <div className="hidden flex-shrink-0 items-center gap-2 text-gray-400 sm:flex">
+            <Command className="h-4 w-4" />
+            <span>K</span>
+          </div>
         </div>
 
-        {/* Right side actions */}
-        <div className="flex items-center gap-4">
-          {/* User menu */}
+        <div className="flex flex-shrink-0 items-center">
           <div className="relative" ref={userMenuRef}>
             <Button
               onClick={handleUserMenuToggle}
               variant="ghost"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              className="flex items-center gap-1 px-2 text-gray-600 hover:text-gray-900 sm:gap-2 sm:px-3"
             >
-              <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-500">
+                <User className="h-4 w-4 text-white" />
               </div>
-              <span className="text-sm font-medium">{user?.full_name || 'User'}</span>
-              <ChevronDown className="w-4 h-4" />
+              <span className="hidden max-w-[8rem] truncate text-sm font-medium md:inline">
+                {user?.full_name || 'User'}
+              </span>
+              <ChevronDown className="hidden h-4 w-4 sm:inline" />
             </Button>
 
             {/* User dropdown */}

@@ -52,7 +52,9 @@
     "loading_order": "Loading order details...",
     "edit_item": "Edit item",
     "add_comment": "Add comment",
-    "edit_comment": "Edit comment"
+    "edit_comment": "Edit comment",
+    "view_cart": "View cart",
+    "items_in_cart": "{count} items in cart"
   },
   "order": {
     "select_to_view": "Select an order to view details",

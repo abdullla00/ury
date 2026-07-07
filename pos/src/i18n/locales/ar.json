@@ -59,7 +59,9 @@
         "loading_order": "جاري تحميل تفاصيل الطلب...",
         "edit_item": "تعديل العنصر",
         "add_comment": "إضافة تعليق",
-        "edit_comment": "تعديل التعليق"
+        "edit_comment": "تعديل التعليق",
+        "view_cart": "عرض العربة",
+        "items_in_cart": "{count} عناصر في العربة"
     },
     "order": {
         "select_to_view": "حدد طلبًا لعرض التفاصيل",

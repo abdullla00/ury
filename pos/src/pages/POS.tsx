@@ -121,20 +121,12 @@ export default function POS() {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
       <Sidebar disabled={isMenuInteractionDisabled()} />
-      <div className="flex-1 flex flex-col h-screen overflow-hidden pe-96">
-        <div className="p-4 bg-white border-b border-gray-200">
-          <div className="max-w-screen-xl mx-auto space-y-3">
-            <div className="flex items-center gap-2 overflow-x-auto overflow-y-hidden">
-              {/* <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                onVisibilityChange={setShowSearch}
-                isVisible={showSearch}
-                disabled={isMenuInteractionDisabled()}
-              /> */}
-              
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:pe-96">
+        <div className="border-b border-gray-200 bg-white p-3 sm:p-4">
+          <div className="mx-auto max-w-screen-xl">
+            <div className="flex items-center gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
               <QuickFilterButton filter="all" icon={Star} label={t('common.all')} />
               <QuickFilterButton filter="special" icon={TrendingUp} label={t('menu.special_items')} />
             </div>

@@ -282,7 +282,7 @@ const TableView = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-gray-50 p-6">
+      <div className="flex-1 overflow-auto bg-gray-50 p-4 pb-6 sm:p-6">
         <div className="max-w-screen-xl mx-auto h-full">
           {error && !loadingTables ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 text-red-500">

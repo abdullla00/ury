@@ -44,7 +44,7 @@ const MenuList: React.FC<MenuListProps> = ({ onItemClick }) => {
 
   return (
     <div className="flex-1 overflow-auto bg-gray-50">
-      <div className="max-w-screen-xl mx-auto p-4 pb-40">
+      <div className="max-w-screen-xl mx-auto p-3 pb-28 sm:p-4 lg:pb-40">
         {menuLoading ? (
           <div className="h-96">
             <Spinner message={t('common.loading_menu_items')} />

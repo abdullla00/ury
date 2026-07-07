@@ -11,9 +11,195 @@ import { Textarea } from '../components/ui/textarea';
 import { usePOSStore } from '../store/pos-store';
 import { useNavigate } from 'react-router-dom';
 import PaymentDialog from '../components/PaymentDialog';
+import MobileDrawer from '../components/MobileDrawer';
 import { printOrder } from '../lib/print';
 import { call } from '../lib/frappe-sdk';
 import { t } from '../i18n';
+import type { POSInvoice } from '../store/slices/orders-slice';
+import type { POSInvoiceItem, POSInvoiceTax } from '../lib/invoice-api';
+
+interface OrderDetailContentProps {
+  selectedOrder: POSInvoice;
+  selectedOrderLoading: boolean;
+  selectedOrderError: string | null;
+  selectedOrderItems: POSInvoiceItem[];
+  selectedOrderTaxes: POSInvoiceTax[];
+  getBadgeVariant: (status: string) => 'default' | 'secondary' | 'destructive';
+  formatDateTime: (date: string, time: string) => string;
+  handleEditOrder: () => void;
+  editLoading: boolean;
+  setCancelDialogOpen: (open: boolean) => void;
+  handlePrintOrder: () => void;
+  isPrinting: boolean;
+  setShowPaymentDialog: (open: boolean) => void;
+}
+
+function OrderDetailContent({
+  selectedOrder,
+  selectedOrderLoading,
+  selectedOrderError,
+  selectedOrderItems,
+  selectedOrderTaxes,
+  getBadgeVariant,
+  formatDateTime,
+  handleEditOrder,
+  editLoading,
+  setCancelDialogOpen,
+  handlePrintOrder,
+  isPrinting,
+  setShowPaymentDialog,
+}: OrderDetailContentProps) {
+  if (selectedOrderLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (selectedOrderError) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-6 text-center text-red-500">
+        <p className="mb-2 text-lg font-medium">Failed to load order details</p>
+        <p className="text-sm">{selectedOrderError}</p>
+      </div>
+    );
+  }
+
+  const canModify =
+    selectedOrder.status === 'Draft' ||
+    selectedOrder.status === 'Unbilled' ||
+    selectedOrder.status === 'Recently Paid';
+
+  return (
+    <>
+      <div className="sticky top-0 z-20 flex min-h-[56px] items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
+        <h2 className="max-w-[10rem] truncate text-lg font-semibold text-gray-900 sm:text-xl">
+          {selectedOrder.name}
+        </h2>
+        <div className="flex items-center gap-2">
+          {canModify && (
+            <>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-md bg-gray-100 p-2 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Edit order"
+                onClick={handleEditOrder}
+                disabled={editLoading}
+              >
+                <Pencil className="h-4 w-4" />
+                {editLoading && <span className="ms-2 text-xs">{t('common.loading')}</span>}
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-md bg-gray-100 p-2 text-red-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                aria-label="Cancel order"
+                onClick={() => setCancelDialogOpen(true)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </>
+          )}
+          <Badge variant={getBadgeVariant(selectedOrder.status)}>
+            {t(`order_status_types.${selectedOrder.status.toLowerCase().replace(/ /g, '_')}`)}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="mb-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-sm">
+                <User className="h-4 w-4 text-gray-500" />
+                <span className="font-medium text-gray-900">{selectedOrder.customer}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">
+                  {formatDateTime(selectedOrder.posting_date, selectedOrder.posting_time)}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-sm">
+                <UserCheck className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">{selectedOrder.waiter}</span>
+              </div>
+              {selectedOrder.restaurant_table && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Receipt className="h-4 w-4 text-gray-500" />
+                  <span className="text-gray-600">{selectedOrder.restaurant_table}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="mb-4 text-base font-semibold text-gray-900 sm:text-lg">{t('order.items_title')}</h3>
+          <div className="space-y-3">
+            {selectedOrderItems.map((item, index) => (
+              <div key={index} className="flex items-start justify-between border-b border-gray-100 py-2">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{item.item_name}</p>
+                  <p className="text-xs text-gray-500">Qty: {item.qty}</p>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.amount)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {selectedOrderTaxes.length > 0 && (
+          <div className="mb-6">
+            <h3 className="mb-4 text-base font-semibold text-gray-900 sm:text-lg">{t('order.taxes_charges')}</h3>
+            <div className="space-y-2">
+              {selectedOrderTaxes.map((tax, index) => (
+                <div key={index} className="flex items-center justify-between py-1">
+                  <span className="text-sm text-gray-600">{tax.description}</span>
+                  <span className="text-sm font-medium text-gray-900">{formatCurrency(tax.rate)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="sticky bottom-0 z-10 border-t border-gray-200 bg-gray-50 p-4 sm:p-6">
+        <div className="flex w-full items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            className="flex-shrink-0"
+            onClick={handlePrintOrder}
+            aria-label="Print"
+            disabled={isPrinting}
+          >
+            {isPrinting ? <Spinner className="h-5 w-5" hideMessage /> : <Printer className="h-5 w-5" />}
+          </Button>
+          {canModify && (
+            <Button
+              className="flex-1"
+              onClick={() => {
+                if (String(selectedOrder.invoice_printed) === '0') {
+                  showToast.error(t('errors.please_print_first'));
+                  return;
+                }
+                setShowPaymentDialog(true);
+              }}
+            >
+              {t('order.payment')}
+            </Button>
+          )}
+          <span className="ms-auto whitespace-nowrap text-lg font-bold text-gray-900 sm:text-xl">
+            {formatCurrency(selectedOrder.rounded_total)}
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default function Orders() {
   const { 
@@ -200,16 +386,14 @@ export default function Orders() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Left Sidebar - Order Types */}
+    <div className="flex h-full flex-col overflow-hidden lg:flex-row">
       <OrderStatusSidebar
         selectedStatus={selectedStatus}
         setSelectedStatus={setSelectedStatus}
       />
 
-      {/* Middle Section - Order Cards */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden pe-96">
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-4 pb-40">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:pe-96">
+        <div className="flex-1 overflow-y-auto bg-gray-50 p-3 pb-6 sm:p-4 lg:pb-40">
           {orderLoading ? (
             <div className="flex items-center justify-center h-full">
               <Spinner />
@@ -301,193 +485,83 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Right Section - Order Details */}
-      <div className="w-96 bg-white border-s border-gray-200 flex flex-col h-[calc(100vh-4rem)] fixed end-0 z-10">
+      {/* Desktop order details */}
+      <div className="fixed end-0 top-14 z-10 hidden h-[calc(100vh-3.5rem)] w-80 flex-col border-s border-gray-200 bg-white lg:top-16 lg:flex lg:h-[calc(100vh-4rem)] lg:w-96">
         {!selectedOrder ? (
-          <div className="text-center h-full flex flex-col items-center justify-center text-gray-500 p-6">
-            <p className="text-lg font-medium mb-2">{t('order.select_to_view')}</p>
+          <div className="flex h-full flex-col items-center justify-center p-6 text-center text-gray-500">
+            <p className="mb-2 text-lg font-medium">{t('order.select_to_view')}</p>
             <p className="text-sm">{t('orders.click_to_view')}</p>
           </div>
-        ) : selectedOrderLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <Spinner />
-          </div>
-        ) : selectedOrderError ? (
-          <div className="text-center h-full flex flex-col items-center justify-center text-red-500 p-6">
-            <p className="text-lg font-medium mb-2">Failed to load order details</p>
-            <p className="text-sm">{selectedOrderError}</p>
-          </div>
         ) : (
-          <>
-            {/* Fixed Header */}
-            <div className="sticky top-0 start-0 end-0 z-20 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between min-h-[64px]">
-              <h2 className="text-xl font-semibold text-gray-900 truncate max-w-[10rem]">{selectedOrder.name}</h2>
-              <div className="flex items-center gap-2">
-                {/* Only show edit and cancel buttons for Draft, Unbilled, and Recently Paid orders */}
-                {(selectedOrder.status === 'Draft' || selectedOrder.status === 'Unbilled' || selectedOrder.status === 'Recently Paid') && (
-                  <>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center rounded-md p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      aria-label="Edit order"
-                      onClick={handleEditOrder}
-                      disabled={editLoading}
-                    >
-                      <Pencil className="w-4 h-4" />
-                      {editLoading && <span className="ms-2 text-xs">{t('common.loading')}</span>}
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center rounded-md p-2 bg-gray-100 hover:bg-gray-200 text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      aria-label="Cancel order"
-                      onClick={() => setCancelDialogOpen(true)}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-                <Badge variant={getBadgeVariant(selectedOrder.status)}>
-                  {t(`order_status_types.${selectedOrder.status.toLowerCase().replace(/ /g, '_')}`)}
-                </Badge>
-              </div>
-            </div>
-            {/* Cancel Order Dialog */}
-            <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{t('order.cancel_order')}</DialogTitle>
-                  <DialogDescription>
-                    {t('errors.enter_cancel_reason')}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="px-6 mb-3">
-                <Textarea
-                  placeholder={t('order.enter_cancel_reason')}
-                  value={cancelReason}
-                  onChange={e => setCancelReason(e.target.value)}
-                  disabled={cancelLoading}
-                  autoFocus
-                />
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setCancelDialogOpen(false)} disabled={cancelLoading}>
-                    {t('common.cancel')}
-                  </Button>
-                  <Button variant="danger" onClick={handleCancelOrder} disabled={cancelLoading}>
-                    {cancelLoading ? t('common.cancelling') : t('common.confirm_cancel')}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 pb-40">
-              {/* Order Header (now only info, not name/buttons) */}
-              <div className="mb-6">
-                {/* Two-column Order Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* First column: customer and time */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm">
-                      <User className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-900 font-medium">{selectedOrder.customer}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">{formatDateTime(selectedOrder.posting_date, selectedOrder.posting_time)}</span>
-                    </div>
-                  </div>
-                  {/* Second column: waiter and table */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm">
-                      <UserCheck className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">{selectedOrder.waiter}</span>
-                    </div>
-                    {selectedOrder.restaurant_table && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <Receipt className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600">{selectedOrder.restaurant_table}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Order Items */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('order.items_title')}</h3>
-                <div className="space-y-3">
-                  {selectedOrderItems.map((item, index) => (
-                    <div key={index} className="flex justify-between items-start py-2 border-b border-gray-100">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">{item.item_name}</p>
-                        <p className="text-xs text-gray-500">Qty: {item.qty}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {formatCurrency(item.amount)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Taxes */}
-              {selectedOrderTaxes.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('order.taxes_charges')}</h3>
-                  <div className="space-y-2">
-                    {selectedOrderTaxes.map((tax, index) => (
-                      <div key={index} className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600">{tax.description}</span>
-                        <span className="text-sm font-medium text-gray-900">
-                          {formatCurrency(tax.rate)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sticky Bottom Section - Single Row: Print | Payment | Total */}
-            <div className="border-t border-gray-200 p-6 bg-gray-50 sticky bottom-0 start-0 end-0 z-10">
-              <div className="flex items-center gap-3 w-full">
-                {/* Print Icon Button */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="flex-shrink-0"
-                  onClick={handlePrintOrder}
-                  aria-label="Print"
-                  disabled={isPrinting}
-                >
-                  {isPrinting ? <Spinner className="w-5 h-5" hideMessage /> : <Printer className="w-5 h-5" />}
-                </Button>
-                {/* Payment Button - Only show for Draft, Unbilled, and Recently Paid orders */}
-                {(selectedOrder.status === 'Draft' || selectedOrder.status === 'Unbilled' || selectedOrder.status === 'Recently Paid') && (
-                  <Button
-                    className="flex-1"
-                    onClick={() => {
-                      if (String(selectedOrder.invoice_printed) === '0') {
-                        showToast.error(t('errors.please_print_first'));
-                        return;
-                      }
-                      setShowPaymentDialog(true);
-                    }}
-                  >
-                    {t('order.payment')}
-                  </Button>
-                )}
-                {/* Total */}
-                <span className="ms-auto text-xl font-bold text-gray-900 whitespace-nowrap">
-                  {formatCurrency(selectedOrder.rounded_total)}
-                </span>
-              </div>
-            </div>
-          </>
+          <OrderDetailContent
+            selectedOrder={selectedOrder}
+            selectedOrderLoading={selectedOrderLoading}
+            selectedOrderError={selectedOrderError}
+            selectedOrderItems={selectedOrderItems}
+            selectedOrderTaxes={selectedOrderTaxes}
+            getBadgeVariant={getBadgeVariant}
+            formatDateTime={formatDateTime}
+            handleEditOrder={handleEditOrder}
+            editLoading={editLoading}
+            setCancelDialogOpen={setCancelDialogOpen}
+            handlePrintOrder={handlePrintOrder}
+            isPrinting={isPrinting}
+            setShowPaymentDialog={setShowPaymentDialog}
+          />
         )}
       </div>
+
+      {/* Mobile order details drawer */}
+      <MobileDrawer
+        open={Boolean(selectedOrder)}
+        onClose={clearSelectedOrder}
+      >
+        {selectedOrder && (
+          <OrderDetailContent
+            selectedOrder={selectedOrder}
+            selectedOrderLoading={selectedOrderLoading}
+            selectedOrderError={selectedOrderError}
+            selectedOrderItems={selectedOrderItems}
+            selectedOrderTaxes={selectedOrderTaxes}
+            getBadgeVariant={getBadgeVariant}
+            formatDateTime={formatDateTime}
+            handleEditOrder={handleEditOrder}
+            editLoading={editLoading}
+            setCancelDialogOpen={setCancelDialogOpen}
+            handlePrintOrder={handlePrintOrder}
+            isPrinting={isPrinting}
+            setShowPaymentDialog={setShowPaymentDialog}
+          />
+        )}
+      </MobileDrawer>
+
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('order.cancel_order')}</DialogTitle>
+            <DialogDescription>
+              {t('errors.enter_cancel_reason')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mb-3 px-6">
+            <Textarea
+              placeholder={t('order.enter_cancel_reason')}
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              disabled={cancelLoading}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)} disabled={cancelLoading}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="danger" onClick={handleCancelOrder} disabled={cancelLoading}>
+              {cancelLoading ? t('common.cancelling') : t('common.confirm_cancel')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {showPaymentDialog && selectedOrder && (
         <PaymentDialog
           onClose={() => setShowPaymentDialog(false)}

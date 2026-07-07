@@ -6,7 +6,6 @@ import POS from './pages/POS';
 import Table from './pages/Table';
 import AuthGuard from './components/AuthGuard';
 import POSOpeningProvider from './components/POSOpeningProvider';
-import ScreenSizeProvider from './components/ScreenSizeProvider';
 import { ToastProvider } from './components/ui/toast';
 import { usePOSStore } from './store/pos-store';
 import { useEffect } from 'react';
@@ -30,25 +29,23 @@ function App() {
   return (
     <>
       <ToastProvider />
-      <ScreenSizeProvider>
-        <AuthGuard>
-          <POSOpeningProvider>
-            <Router basename="/pos">
-              <div className="flex flex-col h-screen bg-gray-100 font-inter">
-                <Header />
-                <div className="flex-1 overflow-hidden">
-                  <Routes>
-                    <Route path="/" element={<POS/>} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/table" element={<Table />} />
-                  </Routes>
-                </div>
-                <Footer />
+      <AuthGuard>
+        <POSOpeningProvider>
+          <Router basename="/pos">
+            <div className="flex h-screen flex-col bg-gray-100 font-inter">
+              <Header />
+              <div className="flex-1 overflow-hidden">
+                <Routes>
+                  <Route path="/" element={<POS/>} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/table" element={<Table />} />
+                </Routes>
               </div>
-            </Router>
-          </POSOpeningProvider>
-        </AuthGuard>
-      </ScreenSizeProvider>
+              <Footer />
+            </div>
+          </Router>
+        </POSOpeningProvider>
+      </AuthGuard>
     </>
   );
 }
