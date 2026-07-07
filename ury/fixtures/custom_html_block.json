@@ -1,25 +1,24 @@
-
 [
-    {
-     "docstatus": 0,
-     "doctype": "Custom HTML Block",
-     "html":"<a href=\"/pos\">\n    <img class=\"uryposlogo\" src=\"/assets/ury/Images/URY-POS.jpg\"/>\n</a>",
-     "modified": "2025-07-24 16:50:40.049812",
-     "name": "URY POS",
-     "private": 0,
-     "roles": [],
-     "script": "",
-     "style": ".uryposlogo {\n    height: 37px;\n}"
-    },
-    {
-     "docstatus": 0,
-     "doctype": "Custom HTML Block",
-     "html": "<a href=\"/urypos\" class=\"container\" ><lable class=\"urypos\">POS V1</lable> </a>",
-     "modified" : "2025-07-24 16:59:46.440258",
-     "name": "POS V1",
-     "private": 0,
-     "roles": [],
-     "script": "",
-     "style": ".container {\n    min-height:40px;\n    display:flex;\n    align-items:center;\n    justify-content:center;\n}\n\n.uryposlogo {\n  font-size:20px;\n}"
-    }
+ {
+  "docstatus": 0,
+  "doctype": "Custom HTML Block",
+  "html": "<a href=\"/pos\" class=\"ury-hero-link\">\n    <div class=\"ury-hero-card\">\n        <img class=\"ury-hero-logo\" src=\"/assets/ury/Images/URY-POS.jpg\" alt=\"URY POS\"/>\n        <div class=\"ury-hero-text\">\n            <div class=\"ury-hero-title\">Open URY POS</div>\n            <div class=\"ury-hero-subtitle\">Take orders, payments, and table service</div>\n        </div>\n    </div>\n</a>",
+  "modified": "2026-07-07 18:00:00.000000",
+  "name": "URY POS",
+  "private": 0,
+  "roles": [],
+  "script": "",
+  "style": ".ury-hero-link {\n    display: block;\n    text-decoration: none;\n    color: inherit;\n}\n\n.ury-hero-card {\n    min-height: 88px;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    padding: 12px 16px;\n    border-radius: 8px;\n    border: 1px solid var(--border-color);\n    background: var(--card-bg);\n}\n\n.ury-hero-logo {\n    height: 48px;\n    border-radius: 6px;\n}\n\n.ury-hero-title {\n    font-size: 16px;\n    font-weight: 600;\n}\n\n.ury-hero-subtitle {\n    font-size: 12px;\n    color: var(--text-muted);\n    margin-top: 4px;\n}"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Custom HTML Block",
+  "html": "<a href=\"/app/ury-production-unit\" class=\"ury-hero-link\">\n    <div class=\"ury-hero-card ury-mosaic-card\">\n        <div class=\"ury-mosaic-icon\">KDS</div>\n        <div class=\"ury-hero-text\">\n            <div class=\"ury-hero-title\">Kitchen Display</div>\n            <div class=\"ury-hero-subtitle\">Open production units and launch Mosaic KDS</div>\n        </div>\n    </div>\n</a>",
+  "modified": "2026-07-07 18:00:00.000000",
+  "name": "URY Mosaic",
+  "private": 0,
+  "roles": [],
+  "script": "",
+  "style": ".ury-hero-link {\n    display: block;\n    text-decoration: none;\n    color: inherit;\n}\n\n.ury-hero-card {\n    min-height: 88px;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    padding: 12px 16px;\n    border-radius: 8px;\n    border: 1px solid var(--border-color);\n    background: var(--card-bg);\n}\n\n.ury-mosaic-card {\n    border-color: #f59e0b;\n}\n\n.ury-mosaic-icon {\n    width: 48px;\n    height: 48px;\n    border-radius: 6px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    font-weight: 700;\n    color: #fff;\n    background: #f59e0b;\n}\n\n.ury-hero-title {\n    font-size: 16px;\n    font-weight: 600;\n}\n\n.ury-hero-subtitle {\n    font-size: 12px;\n    color: var(--text-muted);\n    margin-top: 4px;\n}"
+ }
 ]

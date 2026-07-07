@@ -2,6 +2,21 @@
 
 This guide takes you step-by-step through setting up URY on top of ERPNext
 
+### URY Desk (Frappe v16)
+
+After `bench migrate`, URY provides a Frappe v16-native Desk experience:
+
+| Surface | Purpose |
+| :---- | :---- |
+| **URY** workspace (`/app/ury`) | Daily operations — KPI cards, Open POS hero, kitchen links |
+| **URY Manager** workspace (`/app/ury-manager`) | Setup, all 14 reports, P&L and COGS |
+| **Desktop tiles** | URY → URY POS · Kitchen · URY Manager (role-gated) |
+| **Sidebar** | Quick links to `/pos`, `/pos/orders`, POS entries, production units |
+
+- **Cashiers** with only the URY Cashier role are redirected to `/pos` on login.
+- **POS V1** (`/urypos`) is not linked from Desk; use `/pos` instead.
+- **Kitchen Display** — open a Production Unit and click **Open Kitchen Display**, or use the Kitchen tile.
+
 ### Step 1 : Company
 
 - Login into the site and Follow the installation wizard 

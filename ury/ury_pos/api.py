@@ -24,9 +24,9 @@ def getRestaurantMenu(pos_profile, room=None, order_type=None):
 
     pos_profile = frappe.get_doc("POS Profile", pos_profile)
 
-    cashier = any(
-        role.role in user_role for role in pos_profile.role_allowed_for_billing
-    )
+    from ury.ury.api.pos_cashiers import user_can_bill_on_pos_profile
+
+    cashier = user_can_bill_on_pos_profile(pos_profile)
     branch_name = getBranch()
     restaurant = frappe.db.get_value("URY Restaurant", {"branch": branch_name}, "name")
     

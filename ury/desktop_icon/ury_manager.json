@@ -1,0 +1,27 @@
+{
+ "app": "ury",
+ "bg_color": "gray",
+ "creation": "2026-07-07 18:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "setting",
+ "icon_type": "Link",
+ "idx": 3,
+ "label": "URY Manager",
+ "link_to": "URY Manager",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-07-07 19:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "URY Manager",
+ "owner": "Administrator",
+ "parent_icon": "URY",
+ "restrict_removal": 0,
+ "roles": [
+  {
+   "role": "URY Manager"
+  }
+ ],
+ "sidebar": "URY Manager",
+ "standard": 1
+}

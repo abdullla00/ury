@@ -6,15 +6,19 @@ app_publisher = "Tridz Technologies Pvt. Ltd"
 app_description = "A Complete Restaurant Order Taking Software"
 app_email = "info@tridz.com"
 app_license = "MIT"
-app_logo_url = "/assets/ury/Images/ury-logo.jpg"
+app_logo_url = "/assets/ury/Images/ury-logo.svg"
 app_icon_title = "URY"
 required_apps = ["erpnext"]
+
+extend_bootinfo = ["ury.boot.extend_bootinfo"]
+after_migrate = ["ury.install.after_migrate"]
+
 # Includes in <head>
 # ------------------
 add_to_apps_screen = [
   {
     "name": "ury",
-    "logo": "/assets/ury/Images/ury.png",
+    "logo": "/assets/ury/Images/ury-logo.svg",
     "title": "URY",
     "route": "/app/ury",
     "has_permission": "ury.permission.check_app_permission"
@@ -26,7 +30,9 @@ app_include_js = [
     "/assets/ury/js/quick_entry.js",
     "/assets/ury/js/pos_print.js",
     "/assets/ury/js/restrict_qty_edit_pos.js",
-    "/assets/ury/js/ury_pos_kot.js"
+    "/assets/ury/js/ury_pos_kot.js",
+    "/assets/ury/js/cashier_home_redirect.js",
+    "/assets/ury/js/ury_report_filters.js",
 ]
 
 # include js, css files in header of web template
@@ -188,9 +194,9 @@ scheduler_events = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "ury.event.get_events"
-# }
+override_whitelisted_methods = {
+	"erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry.get_cashiers": "ury.ury.api.pos_cashiers.get_cashiers",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
@@ -380,4 +386,22 @@ fixtures = [
     },
     {"dt": "Role", "filters": [["role_name", "like", "URY %"]]},
     "Client Script",
+    {
+        "dt": "Custom HTML Block",
+        "filters": [["name", "in", ["URY POS", "URY Mosaic"]]],
+    },
+    {
+        "dt": "Number Card",
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "URY Today's Sales",
+                    "URY Open POS Shift",
+                    "URY Draft Orders",
+                ],
+            ]
+        ],
+    },
 ]

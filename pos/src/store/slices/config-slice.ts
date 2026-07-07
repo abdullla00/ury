@@ -86,22 +86,34 @@ export const createConfigSlice: StateCreator<
   },
 
   checkAccess: () => {
-    const { user } = get();
-    const { allowedRoles } = get();
+    const { user, allowedRoles } = get();
 
-    if (!user || !user.roles || !allowedRoles.length) {
+    if (!user || !user.roles) {
       set({ hasAccess: false });
       return;
     }
 
-    // Check if user has any of the allowed roles
-    const hasAccess = user.name === 'Administrator' || user.roles.some(role => allowedRoles.includes(role));
-    set({ hasAccess });
-
-    // If no access, we could redirect or show an error message
-    if (!hasAccess) {
-      set({ error: 'You do not have permission to access this application.' });
+    if (user.name === "Administrator") {
+      set({ hasAccess: true, error: null });
+      return;
     }
+
+    const uryPosRoles = ["URY Cashier", "URY Captain", "URY Manager", "System Manager"];
+    const hasUryRole = user.roles.some((role) => uryPosRoles.includes(role));
+
+    if (!allowedRoles.length) {
+      set({
+        hasAccess: hasUryRole,
+        error: hasUryRole ? null : "You do not have permission to access this application.",
+      });
+      return;
+    }
+
+    const hasAccess = user.roles.some((role) => allowedRoles.includes(role));
+    set({
+      hasAccess,
+      error: hasAccess ? null : "You do not have permission to access this application.",
+    });
   },
 
   setAllowedRoles: (roles) => {

@@ -1,0 +1,22 @@
+{
+ "app": "ury",
+ "bg_color": "",
+ "creation": "2026-07-07 18:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "App",
+ "idx": 0,
+ "label": "URY",
+ "link": "/app/ury",
+ "link_type": "External",
+ "logo_url": "/assets/ury/Images/ury-desk-icon.svg",
+ "modified": "2026-07-07 19:20:00.000000",
+ "modified_by": "Administrator",
+ "name": "URY",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "sidebar": "URY",
+ "standard": 1
+}

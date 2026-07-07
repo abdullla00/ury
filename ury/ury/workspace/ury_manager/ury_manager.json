@@ -1,0 +1,363 @@
+{
+ "app": "ury",
+ "charts": [],
+ "content": "[{\"id\":\"uryMgrHd1\",\"type\":\"header\",\"data\":{\"text\":\"<span class='h4'><b>Restaurant Setup &amp; Analytics</b></span>\",\"col\":12}},{\"id\":\"uryMgrC1\",\"type\":\"card\",\"data\":{\"card_name\":\"Restaurant Setup\",\"col\":4}},{\"id\":\"uryMgrC2\",\"type\":\"card\",\"data\":{\"card_name\":\"Master Data\",\"col\":4}},{\"id\":\"uryMgrC3\",\"type\":\"card\",\"data\":{\"card_name\":\"Finance\",\"col\":4}},{\"id\":\"uryMgrSp1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"uryMgrHd2\",\"type\":\"header\",\"data\":{\"text\":\"<span class='h4'><b>Analytics</b></span>\",\"col\":12}},{\"id\":\"uryMgrC4\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales Reports\",\"col\":4}},{\"id\":\"uryMgrC5\",\"type\":\"card\",\"data\":{\"card_name\":\"Customer Reports\",\"col\":4}},{\"id\":\"uryMgrC6\",\"type\":\"card\",\"data\":{\"card_name\":\"Employee Reports\",\"col\":4}}]",
+ "creation": "2026-07-07 18:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "setting",
+ "idx": 0,
+ "indicator_color": "gray",
+ "is_hidden": 0,
+ "label": "URY Manager",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Restaurant Setup",
+   "link_count": 7,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Branch",
+   "link_count": 0,
+   "link_to": "Branch",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Restaurant",
+   "link_count": 0,
+   "link_to": "URY Restaurant",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Room",
+   "link_count": 0,
+   "link_to": "URY Room",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Table",
+   "link_count": 0,
+   "link_to": "URY Table",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Menu Course",
+   "link_count": 0,
+   "link_to": "URY Menu Course",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Menu",
+   "link_count": 0,
+   "link_to": "URY Menu",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Profile",
+   "link_count": 0,
+   "link_to": "POS Profile",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Master Data",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item",
+   "link_count": 0,
+   "link_to": "Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "BOM",
+   "link_count": 0,
+   "link_to": "BOM",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item Price",
+   "link_count": 0,
+   "link_to": "Item Price",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Report Settings",
+   "link_count": 0,
+   "link_to": "URY Report Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Finance",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Daily P and L",
+   "link_count": 0,
+   "link_to": "URY Daily P and L",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "URY Cost of Goods",
+   "link_count": 0,
+   "link_to": "URY Cost of Goods",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Reports",
+   "link_count": 7,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Today's Sales",
+   "link_count": 0,
+   "link_to": "Today's Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Item Wise Sales",
+   "link_count": 0,
+   "link_to": "Item Wise Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Daywise Sales",
+   "link_count": 0,
+   "link_to": "Daywise Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Month Wise Sales",
+   "link_count": 0,
+   "link_to": "Month Wise Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Time Wise Sales",
+   "link_count": 0,
+   "link_to": "Time Wise Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Service Wise Sales",
+   "link_count": 0,
+   "link_to": "Service Wise Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Average Bill Value",
+   "link_count": 0,
+   "link_to": "Average Bill Value",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Customer Reports",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Customer Data",
+   "link_count": 0,
+   "link_to": "Customer Data",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Daywise Customer Details",
+   "link_count": 0,
+   "link_to": "Daywise Customer Details",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Repeated Customers",
+   "link_count": 0,
+   "link_to": "Repeated Customers",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Cancelled Invoices",
+   "link_count": 0,
+   "link_to": "Cancelled Invoices",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Employee Reports",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Employee Sales",
+   "link_count": 0,
+   "link_to": "Employee Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Employee Item Wise Sales",
+   "link_count": 0,
+   "link_to": "Employee Item Wise Sales",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Daywise Invoices",
+   "link_count": 0,
+   "link_to": "Daywise Invoices",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-07 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "URY",
+ "name": "URY Manager",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "URY Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 32.0,
+ "shortcuts": [],
+ "title": "URY Manager",
+ "type": "Workspace"
+}

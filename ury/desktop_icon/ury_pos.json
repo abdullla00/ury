@@ -1,0 +1,32 @@
+{
+ "app": "ury",
+ "creation": "2026-07-07 18:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "Link",
+ "idx": 1,
+ "label": "URY POS",
+ "link_to": "URY POS",
+ "link_type": "Workspace Sidebar",
+ "logo_url": "/assets/ury/Images/ury-pos-icon.svg",
+ "modified": "2026-07-07 19:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "URY POS",
+ "owner": "Administrator",
+ "parent_icon": "URY",
+ "restrict_removal": 0,
+ "roles": [
+  {
+   "role": "URY Cashier"
+  },
+  {
+   "role": "URY Captain"
+  },
+  {
+   "role": "URY Manager"
+  }
+ ],
+ "sidebar": "URY POS",
+ "standard": 1
+}
