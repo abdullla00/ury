@@ -476,8 +476,6 @@ export const usePOSStore = create<POSStore>((set, get) => ({
     set({ 
       activeOrders: [],
       selectedOrderType: type,
-      isUpdatingOrder: false,
-      orderId: null,
       selectedCustomer: defaultCustomerName
         ? { id: defaultCustomerName, name: defaultCustomerName, phone: '' }
         : null,

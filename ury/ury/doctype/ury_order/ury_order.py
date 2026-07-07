@@ -64,13 +64,13 @@ def get_order_invoice(table=None, invoiceNo=None, order_type=None, is_payment=No
             else:
                 invoice.order_type= "Dine In"
 
-        invoice.taxes_and_charges = frappe.db.get_value(
-            "URY Restaurant", restaurant, "default_tax_template"
-        )
+            invoice.taxes_and_charges = frappe.db.get_value(
+                "URY Restaurant", restaurant, "default_tax_template"
+            )
 
-        invoice.selling_price_list = frappe.db.get_value(
-            "Price List", dict(restaurant_menu=menu_name, enabled=1)
-        )
+            invoice.selling_price_list = frappe.db.get_value(
+                "Price List", dict(restaurant_menu=menu_name, enabled=1)
+            )
 
     else:
         invoice_name = frappe.get_value(
@@ -79,24 +79,30 @@ def get_order_invoice(table=None, invoiceNo=None, order_type=None, is_payment=No
             
         if invoice_name:
             invoice = frappe.get_doc("POS Invoice", invoice_name)
-            
 
         else:
             invoice = frappe.new_doc("POS Invoice")
             invoice.is_pos = 1
             invoice.update_stock = 1
-        
-        branch = getBranch()
-        restaurant = frappe.db.get_value("URY Restaurant", {"branch": branch}, "name")
-   
-        menu=get_menu_name(order_type)
- 
-        if (order_type == "Aggregators" and frappe.db.get_value("Branch", branch, "custom_no_taxes") == 0) or order_type != "Aggregators":
-            invoice.taxes_and_charges = frappe.db.get_value("URY Restaurant", restaurant, "default_tax_template")
-        
-        invoice.selling_price_list = frappe.db.get_value(
-            "Price List", dict(restaurant_menu=menu, enabled=1)
-        )
+
+            branch = getBranch()
+            restaurant = frappe.db.get_value("URY Restaurant", {"branch": branch}, "name")
+            menu = get_menu_name(order_type)
+
+            invoice.branch = branch
+            invoice.restaurant = restaurant
+            invoice.naming_series = frappe.db.get_value(
+                "URY Restaurant", restaurant, "invoice_series_prefix"
+            )
+
+            if (order_type == "Aggregators" and frappe.db.get_value("Branch", branch, "custom_no_taxes") == 0) or order_type != "Aggregators":
+                invoice.taxes_and_charges = frappe.db.get_value(
+                    "URY Restaurant", restaurant, "default_tax_template"
+                )
+
+            invoice.selling_price_list = frappe.db.get_value(
+                "Price List", dict(restaurant_menu=menu, enabled=1)
+            )
         
         
 
@@ -289,7 +295,7 @@ def sync_order(
         frappe.log_error(error_msg, "KOT Error")
 
     # table status
-    if invoice.invoice_printed == 0:
+    if table and invoice.invoice_printed == 0:
         frappe.db.set_value(
             "URY Table", table, {"occupied": 1, "latest_invoice_time": invoice.creation}
         )
@@ -464,7 +470,7 @@ def captain_transfer(currentCaptain, newCaptain, invoice):
     multiple_cashier = frappe.db.get_value("POS Profile",pos_profile,"custom_enable_multiple_cashier")
     branch=frappe.get_value("POS Invoice", invoice,"branch")
     if multiple_cashier:
-        table=pos_profile=frappe.get_value("POS Invoice", invoice,"restaurant_table")
+        table = frappe.get_value("POS Invoice", invoice, "restaurant_table")
         current_room = frappe.get_value("URY Table", table,"restaurant_room")
         new_captain_room =  frappe.db.sql("""
                 SELECT room
@@ -502,7 +508,7 @@ def customer_favourite_item(customer_name):
     item_qty = {}
 
     for invoice in pos:
-        pos_invoice = frappe.get_doc("POS Invoice", invoice)
+        pos_invoice = frappe.get_doc("POS Invoice", invoice.name)
         for item in pos_invoice.items:
             item_name = item.item_name
             item_qty[item_name] = item_qty.get(item_name, 0) + item.qty
@@ -522,11 +528,12 @@ def cancel_order(invoice_id, reason):
     pos_invoice = frappe.get_doc("POS Invoice", invoice_id)
 
     # Update table status
-    frappe.db.set_value(
-        "URY Table",
-        pos_invoice.restaurant_table,
-        {"occupied": 0, "latest_invoice_time": None},
-    )
+    if pos_invoice.restaurant_table:
+        frappe.db.set_value(
+            "URY Table",
+            pos_invoice.restaurant_table,
+            {"occupied": 0, "latest_invoice_time": None},
+        )
 
     try:
         cancel_kot(invoice_id)
@@ -549,16 +556,25 @@ def cancel_order(invoice_id, reason):
 # Method for URY POS
 @frappe.whitelist()
 def make_invoice(customer, payments, cashier, pos_profile,owner, additionalDiscount=None, table=None, invoice=None):
-    order_type =  invoice_name = frappe.get_value("POS Invoice",invoice , "order_type")
+    if isinstance(payments, str):
+        payments = json.loads(payments)
+
+    order_type = frappe.get_value("POS Invoice", invoice, "order_type")
     invoice = get_order_invoice(table, invoice, order_type, "Payments")
 
     if table:
         _branch, _menu_name, restaurant = get_restaurant_and_menu_name(table)
         invoice.restaurant = restaurant
+    elif not invoice.restaurant:
+        branch = getBranch()
+        invoice.branch = invoice.branch or branch
+        invoice.restaurant = frappe.db.get_value(
+            "URY Restaurant", {"branch": branch}, "name"
+        )
 
     invoice.customer = customer
     invoice.pos_profile = pos_profile
-    invoice.additional_discount_percentage=additionalDiscount
+    invoice.additional_discount_percentage = additionalDiscount or 0
     invoice.calculate_taxes_and_totals()
 
     invoice.set("payments", [])

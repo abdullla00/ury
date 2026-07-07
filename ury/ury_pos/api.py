@@ -222,7 +222,7 @@ def getInvoiceForCashier(status, cashier, limit, limit_start):
                 posting_date, rounded_total, order_type 
             FROM `tabPOS Invoice` 
             WHERE branch = %s AND status = %s AND cashier = %s
-            AND (invoice_printed = 0 AND restaurant_table IS NOT NULL)
+            AND (invoice_printed = 0 AND COALESCE(restaurant_table, '') != '')
             ORDER BY modified desc
             LIMIT %s OFFSET %s
             """,
@@ -312,7 +312,7 @@ def getPosInvoice(status, limit, limit_start):
                 posting_date, rounded_total, order_type 
             FROM `tabPOS Invoice` 
             WHERE branch = %s AND status = %s 
-            AND (invoice_printed = 0 AND restaurant_table IS NOT NULL)
+            AND (invoice_printed = 0 AND COALESCE(restaurant_table, '') != '')
             ORDER BY modified desc
             LIMIT %s OFFSET %s
             """,
@@ -366,31 +366,49 @@ def getPosInvoice(status, limit, limit_start):
 
 
 @frappe.whitelist()
-def searchPosInvoice(query,status):
+def searchPosInvoice(query, status):
     if not query:
         return {"data": [], "next": False}
-    query = query.lower()
-    filters = {"status": "Paid" if status == "Recently Paid" else status}
-    
-    # Add additional conditions for Unbilled status
-    if status == "Unbilled":
-        filters.update({
-            "status":"draft",
-            "restaurant_table": ["not in", [None, ""]],  # Check if restaurant_table has value
-            "invoice_printed": 0  # Check if invoice_printed is 0
-        })
-    pos_invoices = frappe.get_all(
-        "POS Invoice",
-        filters=filters,           
-        or_filters=[
-            ["name", "like", f"%{query}%"],
-            ["customer", "like", f"%{query}%"],
-            ["mobile_number", "like", f"%{query}%"],
-        ],
-        fields=["name", "customer", "grand_total", "posting_date", "posting_time", "order_type", "restaurant_table","status","grand_total","rounded_total","net_total","mobile_number"],
-        limit_page_length=10 
+
+    branch = getBranch()
+    query_like = f"%{query.strip()}%"
+
+    if status == "Draft":
+        status_filter = (
+            "status = 'Draft' AND (invoice_printed = 1 "
+            "OR (invoice_printed = 0 AND COALESCE(restaurant_table, '') = ''))"
+        )
+    elif status == "Unbilled":
+        status_filter = (
+            "status = 'Draft' AND invoice_printed = 0 "
+            "AND COALESCE(restaurant_table, '') != ''"
+        )
+    elif status == "Recently Paid":
+        status_filter = "status = 'Paid'"
+    else:
+        status_filter = "status = %s"
+
+    params = [branch, query_like, query_like, query_like]
+    if status not in ("Draft", "Unbilled", "Recently Paid"):
+        params.append(status)
+
+    pos_invoices = frappe.db.sql(
+        f"""
+        SELECT
+            name, customer, grand_total, posting_date, posting_time, order_type,
+            restaurant_table, status, rounded_total, net_total, mobile_number,
+            invoice_printed, cashier, waiter
+        FROM `tabPOS Invoice`
+        WHERE branch = %s
+            AND (name LIKE %s OR customer LIKE %s OR mobile_number LIKE %s)
+            AND {status_filter}
+        ORDER BY modified desc
+        LIMIT 10
+        """,
+        tuple(params),
+        as_dict=True,
     )
-    
+
     return {"data": pos_invoices, "next": len(pos_invoices) == 10}
     
 
@@ -456,6 +474,8 @@ def getPosProfile():
     cashier = None
     owner = None
     posProfile = frappe.db.exists("POS Profile", {"branch": branchName})
+    if not posProfile:
+        frappe.throw(_("No POS Profile found for branch {0}").format(branchName))
     pos_profiles = frappe.get_doc("POS Profile", posProfile)
     global_defaults = frappe.get_single('Global Defaults')
     disable_rounded_total = global_defaults.disable_rounded_total
@@ -563,7 +583,7 @@ def getPosInvoiceItems(invoice):
     for items in posItems:
         item_name = items.item_name
         qty = items.qty
-        amount = items.rate
+        amount = items.amount
         itemDetails.append(
             {
                 "item_name": item_name,
@@ -632,7 +652,7 @@ def getAggregatorItem(aggregator):
             "item": item.item_code,
             "item_name": item.item_name,
             "rate": item.price_list_rate,
-            "item_image": frappe.db.get_value("Item", item.item, "image"),
+            "item_image": frappe.db.get_value("Item", item.item_code, "image"),
         }
         for item in aggregatorItem
         if not frappe.db.get_value("Item", item.item_code, "disabled")

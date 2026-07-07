@@ -5,3 +5,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 ury.patches.v2_0.default_permissions
 ury.patches.v2_0.set_cashier_defaults
+ury.patches.v2_0.fix_report_date_spine

@@ -315,6 +315,7 @@ export default function Orders() {
       posStore.resetOrderState();
       posStore.setSelectedOrderType(order.order_type);
       posStore.setOrderForUpdate(order.name);
+      posStore.setOrderComment(order.custom_comments || '');
       if (order.restaurant_table) {
         posStore.setSelectedTable(order.restaurant_table, order.custom_restaurant_room || null,true);
       }
@@ -570,7 +571,7 @@ export default function Orders() {
           invoice={selectedOrder.name}
           customer={selectedOrder.customer}
           posProfile={posStore.posProfile?.name || ''}
-          table={selectedOrder.restaurant_table || null}
+          table={selectedOrder.restaurant_table ?? ''}
           cashier={posStore.posProfile?.cashier || ''}
           owner={posStore.posProfile?.cashier || ''}
           fetchOrders={fetchOrders}

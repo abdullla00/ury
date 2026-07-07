@@ -148,7 +148,7 @@ def qz_print_update(invoice):
         
     except Exception as e:
         frappe.log_error(message=e, title="Print Fail")
-        frappe.throw(_("Error while printing order",e))                   
+        frappe.throw(_("Error while printing order: {0}").format(e))                   
         return {"status": "Failure"}
 
 

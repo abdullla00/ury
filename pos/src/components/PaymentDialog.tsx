@@ -123,14 +123,14 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setError(null);
     try {
       await call.post('ury.ury.doctype.ury_order.ury_order.make_invoice', {
-        additionalDiscount: discountValue ? parseInt(discountValue) : null,
+        additionalDiscount: discountValue ? parseInt(discountValue, 10) : 0,
         cashier,
         customer,
         invoice,
         owner,
         payments,
         pos_profile: posProfile,
-        table,
+        table: table ?? '',
       });
       // Show toast and reload orders (assume showToast and reload available globally)
       if (typeof window !== 'undefined' && (window as any).showToast) {
@@ -141,6 +141,15 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       await fetchOrders();
     } catch (err) {
       setError((err as Error).message);
+      if (err && typeof err === 'object' && '_server_messages' in err && typeof (err as any)._server_messages === 'string') {
+        try {
+          const messages = JSON.parse((err as any)._server_messages);
+          const messageObj = JSON.parse(messages[0]);
+          setError(messageObj.message || (err as Error).message);
+        } catch {
+          // keep default error message
+        }
+      }
     } finally {
       setIsProcessing(false);
     }
