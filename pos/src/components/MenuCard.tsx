@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import { formatCurrency, cn } from '../lib/utils';
+import { t } from '../i18n';
 
 interface MenuCardProps {
   id: string;
@@ -8,35 +9,55 @@ interface MenuCardProps {
   item_image: string | null;
   course?: string;
   item: string;
+  hasModifiers?: boolean;
   onClick?: () => void;
+  onLongPress?: () => void;
   disabled?: boolean;
 }
 
-const MenuCard: FC<MenuCardProps> = ({ 
-  id, 
-  name, 
-  price, 
-  item_image, 
-  course, 
-  item, 
+const MenuCard: FC<MenuCardProps> = ({
+  name,
+  price,
+  item_image,
+  course,
   onClick,
-  disabled 
+  onLongPress,
+  hasModifiers = false,
+  disabled,
 }) => {
+  const handlePointerDown = () => {
+    if (!onLongPress || disabled) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      onLongPress();
+    }, 500);
+    const clear = () => window.clearTimeout(timer);
+    window.addEventListener('pointerup', clear, { once: true });
+    window.addEventListener('pointercancel', clear, { once: true });
+  };
+
   return (
     <div
       className={cn(
-        "bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer h-56 flex flex-col",
-        disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+        'flex h-52 cursor-pointer flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.97]',
+        disabled && 'pointer-events-none cursor-not-allowed opacity-50',
       )}
       onClick={disabled ? undefined : onClick}
+      onContextMenu={(e) => {
+        if (onLongPress && !disabled) {
+          e.preventDefault();
+          onLongPress();
+        }
+      }}
+      onPointerDown={handlePointerDown}
     >
-      {/* Image section - fixed height */}
-      <div className="h-24">
+      <div className="relative h-[60%] min-h-[7rem]">
         {item_image ? (
           <img
             src={item_image}
             alt={name}
-            className="w-full h-full object-cover filter saturate-75 brightness-95"
+            className="h-full w-full object-cover"
             style={{ filter: 'saturate(0.7) brightness(0.95)' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -44,44 +65,43 @@ const MenuCard: FC<MenuCardProps> = ({
               const parent = target.parentElement;
               if (parent) {
                 const placeholder = document.createElement('div');
-                placeholder.className = 'w-full h-full bg-gray-200 flex items-center justify-center text-2xl text-gray-400 font-medium';
+                placeholder.className =
+                  'flex h-full w-full items-center justify-center bg-gray-200 text-2xl font-medium text-gray-400';
                 placeholder.textContent = name.slice(0, 2).toUpperCase();
                 parent.insertBefore(placeholder, target);
               }
             }}
           />
         ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-2xl text-gray-400 font-medium">
+          <div className="flex h-full w-full items-center justify-center bg-gray-200 text-2xl font-medium text-gray-400">
             {name.slice(0, 2).toUpperCase()}
           </div>
         )}
+        <span className="absolute bottom-2 end-2 rounded-md bg-black/70 px-2 py-0.5 text-sm font-bold tabular-nums text-white shadow">
+          {formatCurrency(price)}
+        </span>
+        {hasModifiers && (
+          <span
+            className="absolute start-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white shadow"
+            title={t('menu.customize_hint')}
+          >
+            +
+          </span>
+        )}
       </div>
 
-      {/* Content section - flex grow with fixed padding */}
-      <div className="flex-1 p-3 flex flex-col">
-        {/* Name section - fixed height for 2 lines */}
-        <div className="">
-          <h3 className="font-medium text-gray-900 text-sm leading-5 line-clamp-2" title={name}>
-            {name}
-          </h3>
-        </div>
-
-        {/* Course section - fixed height for 1 line */}
-        <div className="h-5 mt-1">
-          <p className="text-xs text-gray-500 truncate" title={course}>
+      <div className="flex flex-1 flex-col p-3">
+        <h3 className="line-clamp-2 text-sm font-medium leading-5 text-gray-900" title={name}>
+          {name}
+        </h3>
+        <div className="mt-1 h-5">
+          <p className="truncate text-xs text-gray-500" title={course}>
             {course || ' '}
           </p>
-        </div>
-
-        {/* Price section - pushed to bottom */}
-        <div className="mt-auto pt-2">
-          <span className="text-sm font-semibold text-gray-900 tabular-nums">
-            {formatCurrency(price)}
-          </span>
         </div>
       </div>
     </div>
   );
 };
 
-export default MenuCard; 
+export default MenuCard;

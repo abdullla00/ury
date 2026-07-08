@@ -12,10 +12,11 @@ interface Props {
   selectedRoom: string;
   tables: Table[];
   onBackToGrid: () => void;
-  onRefresh?: () => void; // Add refresh callback
+  onRefresh?: () => void;
+  onOpenTable?: (tableName: string) => void;
 }
 
-const LayoutView: React.FC<Props> = ({ selectedRoom, tables, onBackToGrid, onRefresh }) => {
+const LayoutView: React.FC<Props> = ({ selectedRoom, tables, onBackToGrid, onRefresh, onOpenTable }) => {
   const isRTL = document.dir === 'rtl';
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -197,7 +198,10 @@ const LayoutView: React.FC<Props> = ({ selectedRoom, tables, onBackToGrid, onRef
       setSelectedTableOrder(null);
     }
 
-    if (!isEditMode) return;
+    if (!isEditMode) {
+      onOpenTable?.(table.name);
+      return;
+    }
 
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (!canvasRect) return;

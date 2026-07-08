@@ -21,7 +21,10 @@
     "cancelling": "Cancelling...",
     "confirm_cancel": "Confirm Cancel",
     "loading_ury_pos": "Loading URY POS...",
-    "please_wait_setup": "Please wait while we set things up"
+    "please_wait_setup": "Please wait while we set things up",
+    "close": "Close",
+    "clear": "Clear",
+    "remove": "Remove"
   },
   "header": {
     "search_placeholder_default": "Search orders, menu items, or customers...",
@@ -29,10 +32,26 @@
     "search_placeholder_menu": "Search Menu",
     "switch_to_desk": "Switch To Desk",
     "clear_cache": "Clear Cache",
-    "logout": "Logout"
+    "logout": "Logout",
+    "open_kds": "Kitchen Display",
+    "ury_reports": "URY Reports",
+    "sub_pos_closing": "Sub POS Closing",
+    "printer_docs": "Printer setup",
+    "urypos_deprecation": "URY POS at /pos replaces the legacy /urypos screen. Please bookmark /pos and clear cache after upgrades.",
+    "shift_open": "OPEN",
+    "shift_closed": "Shift closed",
+    "role_training": "Role & training guide"
   },
   "menu": {
-    "special_items": "Special Items"
+    "special_items": "Special Items",
+    "favourites": "Customer favourites",
+    "customize_hint": "Has customization options"
+  },
+  "aggregator": {
+    "title": "Delivery aggregator",
+    "loading": "Loading partners...",
+    "select_placeholder": "Select delivery partner",
+    "menu_loaded": "Aggregator menu loaded"
   },
   "pos_sidebar": {
     "categories": "Categories",
@@ -42,7 +61,7 @@
     "empty_title": "Your cart is empty",
     "empty_subtitle": "Add items to get started with your order",
     "click_to_add": "Click items to add them",
-    "double_click_hint": "Double-click for customization options",
+    "long_press_hint": "Long-press any item to customize",
     "clear_cart": "Clear cart",
     "total": "Total",
     "add_new_order": "Add New Order",
@@ -54,7 +73,51 @@
     "add_comment": "Add comment",
     "edit_comment": "Edit comment",
     "view_cart": "View cart",
-    "items_in_cart": "{count} items in cart"
+    "items_in_cart": "{count} items in cart",
+    "send_to_kitchen": "Send to Kitchen",
+    "payment": "Payment",
+    "sent_to_kitchen": "Sent to kitchen",
+    "leave_confirm": "You have items in the cart. Leave this screen?",
+    "order": "Order",
+    "order_note": "Order note",
+    "allergy_note": "Allergy note",
+    "customer": "Customer",
+    "item_note": "Item note"
+  },
+  "actions": {
+    "menu": "Actions",
+    "release_table": "Release table",
+    "release_table_blocked": "Clear the cart before releasing the table",
+    "table_released": "Table released",
+    "transfer_table": "Transfer table",
+    "transfer_merge_table": "Transfer / Merge",
+    "transfer_to_empty": "Transfer to empty table",
+    "merge_to_occupied": "Merge with occupied table",
+    "merge_success": "Orders merged successfully",
+    "transfer_from": "Move order from {table} to:",
+    "transfer_success": "Table transferred successfully",
+    "transfer_failed": "Table transfer failed",
+    "print_bill": "Print bill",
+    "print_bill_success": "Bill printed",
+    "reprint_kot_success": "Kitchen ticket reprinted",
+    "captain_transfer": "Captain transfer",
+    "captain_transfer_success": "Captain transferred",
+    "captain_transfer_failed": "Captain transfer failed",
+    "new_order": "New order",
+    "set_tab": "Set tab",
+    "tab_name": "Tab name",
+    "qr_codes": "QR codes",
+    "no_available_tables": "No available tables in this room",
+    "print_qr_sheet": "Print QR sheet",
+    "reprint_kot": "Reprint kitchen ticket",
+    "reprint_kot_hint": "Use Orders screen to reprint",
+    "cancel_kot_confirm": "This order may have been sent to the kitchen. Cancel anyway?"
+  },
+  "guest": {
+    "subtitle": "Browse and send your order to the kitchen",
+    "order_notes": "Special instructions (optional)",
+    "review_and_send": "Review & Send",
+    "customize": "Customize"
   },
   "order": {
     "select_to_view": "Select an order to view details",
@@ -67,18 +130,36 @@
   },
   "payment": {
     "title": "Payment",
+    "amount_due": "Amount due",
     "apply_discount": "Apply Discount",
     "discount_placeholder": "Enter %",
+    "discount_amount_placeholder": "Enter amount",
     "payment_methods": "Payment Methods",
     "amount_placeholder": "Amount",
     "total_entered": "Total Entered",
     "order_summary": "Order Summary",
     "subtotal": "Subtotal",
     "discount": "Discount",
+    "voucher": "Voucher",
+    "voucher_placeholder": "Coupon or gift card code",
+    "voucher_hint": "Scan or enter an ERPNext Coupon Code",
+    "voucher_required": "Enter a voucher code",
+    "voucher_invalid": "Invalid or expired voucher",
     "adjustment": "Adjustment",
     "total": "Total",
     "pay_button": "Pay {{amount}}",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "tip": "Tip",
+    "tip_custom": "Custom",
+    "tip_amount": "Tip amount",
+    "email_invoice": "Email invoice to customer",
+    "show_extras": "Discount, tips & more",
+    "hide_extras": "Hide extras",
+    "fill_remaining": "Fill balance",
+    "clear_mode": "Clear amount",
+    "change_due": "Change",
+    "remaining": "Remaining",
+    "bill_split_hint": "Bill split by item/guest is coming in a future release."
   },
   "pos": {
     "not_opened_title": "POS Not Opened",
@@ -88,7 +169,77 @@
     "not_closed_title": "Previous POS Not Closed",
     "not_closed_message": "Please close the previous POS Entry to continue.",
     "reload_page": "Reload Page",
-    "switch_to_desk": "Switch to Desk"
+    "switch_to_desk": "Switch to Desk",
+    "shift_gate": {
+      "business_date": "Business date",
+      "primary_open": "Open POS Shift",
+      "primary_close": "Close Previous Shift",
+      "check_again": "I've submitted — Continue",
+      "advanced_desk": "Advanced: Open Desk",
+      "no_permission": "You don't have permission to open the shift. Ask your manager.",
+      "expected_floats": "Expected opening floats",
+      "expected_floats_hint": "Enter these amounts in Desk, then Submit.",
+      "navigating_open": "Opening…",
+      "navigating_close": "Closing…",
+      "zero_sales_hint": "If you had no sales yesterday, you may still need to submit a zero close.",
+      "business_day_rule": "Business day rolls at 5:00 AM — close the previous day before opening today.",
+      "view_stale_entry": "View previous opening entry",
+      "session_expired": "Your session expired while in Desk. Log in again, then tap Continue.",
+      "desk_return_banner": "Submit this form to return to URY POS",
+      "poll_checking": "Checking shift status…",
+      "poll_updated": "Shift status updated.",
+      "error_at": "Last error at {{time}}",
+      "error_retry_in": "Retry in {{seconds}}s…",
+      "opening": {
+        "title": "Start your shift",
+        "step1": "Open POS Opening Entry in Desk",
+        "step2": "Enter opening balances for each payment mode",
+        "step3": "Submit — you'll return here automatically",
+        "checklist_profile": "POS Profile ready",
+        "checklist_floats": "Floats counted",
+        "checklist_submit": "Submit in Desk"
+      },
+      "draft": {
+        "title": "Finish your shift draft",
+        "warning": "You have an unsubmitted shift draft. Resume it and Submit to continue.",
+        "resume": "Resume & Submit Shift",
+        "start_fresh": "Start fresh",
+        "start_fresh_blocked": "Another shift is already open — finish or discard your draft instead of starting fresh."
+      },
+      "outdated": {
+        "title": "Previous shift still open",
+        "step_close": "Close yesterday's shift in Desk",
+        "step_open": "Open today's POS Opening Entry"
+      },
+      "closing": {
+        "title": "Close yesterday before continuing"
+      },
+      "waiting_main": {
+        "title": "Waiting for main cashier",
+        "main_cashier": "{{name}} must open the shift first.",
+        "contact": "Email main cashier"
+      },
+      "closing_queued": {
+        "title": "Closing in progress…",
+        "message": "Closing may take a moment — you'll return to POS when it's done. Tap Continue to check again."
+      },
+      "blocked_by_other": {
+        "title": "Shift already opened",
+        "message": "{{name}} has already opened the shift for this POS.",
+        "view": "View shift entry"
+      },
+      "error": {
+        "title": "Could not verify shift",
+        "retry": "Retry"
+      }
+    },
+    "shift_welcome": {
+      "title": "Shift opened",
+      "subtitle": "You're ready to take orders.",
+      "start_orders": "Start taking orders",
+      "opening_entry": "Opening entry",
+      "skip": "Tap anywhere to continue"
+    }
   },
   "customer": {
     "search_placeholder": "Search customer...",
@@ -108,10 +259,12 @@
     "select_territory": "Select territory",
     "adding": "Adding Customer...",
     "add_button": "Add Customer",
-    "failed_create": "Failed to create customer. Please try again."
+    "failed_create": "Failed to create customer. Please try again.",
+    "add_customer": "Add customer",
+    "change_customer": "Change customer"
   },
   "comment": {
-    "title": "Order Comments",
+    "title": "Order note",
     "label": "Add comments for this order",
     "placeholder": "Enter any special instructions or comments...",
     "save_button": "Save Comment"
@@ -140,7 +293,13 @@
     "discount_exceeds_max": "Percentage discount cannot exceed 100%",
     "please_print_first": "Please print invoice before making payment",
     "enter_cancel_reason": "Please enter a reason for cancellation.",
-    "dine_in_restricted": "Dine In is not available for your role"
+    "dine_in_restricted": "Dine In is not available for your role",
+    "full_payment_required": "Full payment is required for this order",
+    "payment_preview_failed": "Could not calculate payment totals",
+    "invalid_guest_link": "This table ordering link is invalid",
+    "reprint_kot_failed": "Failed to reprint kitchen ticket",
+    "copy_failed": "Failed to copy to clipboard",
+    "failed_load_captains": "Failed to load captains"
   },
   "success": {
     "order_cancelled": "Order cancelled successfully",
@@ -154,6 +313,32 @@
     "no_orders_found": "No orders found",
     "click_to_view": "Click on any order card to view its details",
     "status_title": "Order Status",
+    "items_label": "items",
+    "copy_order": "Copy order #",
+    "copied_order": "Order number copied",
+    "open_kds_station": "Open KDS — {{station}}",
+    "kitchen_status": "Kitchen status",
+    "order_note": "Order note",
+    "allergy_note": "Allergy",
+    "no_match": "No match for \"{{query}}\"",
+    "clear_search": "Clear search",
+    "empty_draft": "No draft orders",
+    "empty_unbilled": "No unbilled table orders",
+    "empty_paid": "No paid orders",
+    "empty_consolidated": "No consolidated orders",
+    "empty_return": "No return orders",
+    "empty_recently_paid": "No recently paid orders",
+    "kot_filter": {
+      "all": "All",
+      "in_kitchen": "In kitchen",
+      "delayed": "Delayed",
+      "not_sent": "Not sent"
+    },
+    "kitchen_summary": {
+      "in_kitchen": "🔥 {{count}} in kitchen",
+      "delayed": "⚠ {{count}} delayed",
+      "not_sent": "○ {{count}} not sent"
+    },
     "pagination": {
       "previous": "Previous",
       "next": "Next",
@@ -168,9 +353,16 @@
     "layout": "Layout",
     "available": "Available",
     "occupied": "Occupied",
+    "attention": "Needs attention",
+    "started_at": "Started",
     "room": "Room",
     "seats": "Seats",
+    "guest_ordering": "Guest ordering",
+    "all_available_title": "All tables available",
+    "all_available_subtitle": "Tap a table to start a new dine-in order",
     "tap_to_start": "Tap to start a new dine-in order",
+    "tap_to_resume": "Tap to resume order",
+    "jump_placeholder": "Jump to table…",
     "no_tables_found": "No tables found for this room",
     "edit_settings": "Edit Table Settings",
     "table_info": "Table Info",
@@ -189,7 +381,7 @@
     "total_amount": "Total Amount",
     "last_updated": "Last Updated",
     "order_items": "Order Items",
-    "started_at": "Started at:",
+    "started_at": "Started at",
     "no_active_order": "No active order found",
     "loading_table_order": "Loading table order...",
     "table_name_title": "Table names are managed in backend",
@@ -204,6 +396,13 @@
     "pos": "POS",
     "table": "Table",
     "orders": "Orders"
+  },
+  "context": {
+    "table": "Table",
+    "item_count": "{count} items",
+    "editing": "Editing {orderId}",
+    "pax": "Pax",
+    "kot_delayed": "Kitchen delay ({minutes}m+)"
   },
   "product_dialog": {
     "special_instructions": "Special Instructions",
@@ -231,5 +430,13 @@
     "paid": "Paid",
     "consolidated": "Consolidated",
     "return": "Return"
+  },
+  "kot_status": {
+    "not_sent": "Not sent",
+    "in_kitchen": "In kitchen",
+    "ready": "Ready",
+    "served": "Done",
+    "cancel_pending": "Cancel pending",
+    "partial": "Partial"
   }
 }

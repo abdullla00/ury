@@ -1,20 +1,17 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "../views/Home.vue";
-import authRoutes from './auth';
-import KOT from '../components/kot.vue';
+import KotBoard from "../components/KotBoard.vue";
 
 const routes = [
   {
-	path: "/",
-	name: "KOT",
-	component: KOT,
-  },  
-  ...authRoutes,
+    path: "/:production?",
+    name: "KotBoard",
+    component: KotBoard,
+    props: true,
+  },
 ];
 
 const router = createRouter({
-  base: "/URYMosaic/",
-  history: createWebHistory(),
+  history: createWebHistory("/URYMosaic/"),
   routes,
 });
 

@@ -47,6 +47,17 @@ export const ORDER_TYPE_DEFAULT_CUSTOMER: Partial<Record<OrderType, string>> = {
   "Delivery": "Delivery",
 };
 
+export function isDefaultCustomerForType(
+  customerName: string | undefined,
+  orderType: OrderType,
+): boolean {
+  const def = ORDER_TYPE_DEFAULT_CUSTOMER[orderType];
+  if (!def || !customerName) {
+    return !customerName && Boolean(def);
+  }
+  return customerName.trim().toLowerCase() === def.trim().toLowerCase();
+}
+
 export type OrderStatusType = "Draft" | "Unbilled" | "Recently Paid" | "Paid" | "Consolidated" | "Return";
 
 // Base status types that are always available
@@ -89,8 +100,8 @@ export const EXTENDED_ORDER_STATUS_TYPES = [
 export const getOrderStatusTypes = (viewAllStatus?: number, paidLimit?: number) => {
     let statusTypes = [...BASE_ORDER_STATUS_TYPES];
     
-    // Add Recently Paid if paid_limit > 0
-    if (paidLimit && paidLimit > 0) {
+    // Recently Paid only when paid_limit > 0 and view_all_status is off
+    if (paidLimit && paidLimit > 0 && viewAllStatus !== 1) {
         statusTypes.push(...RECENTLY_PAID_STATUS_TYPE);
     }
     

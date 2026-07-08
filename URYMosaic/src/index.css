@@ -1,4 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-	
+
+@layer base {
+  :root {
+    --primary-50: 226 100% 97%;
+    --primary-100: 224 96% 90%;
+    --primary-200: 223 94% 82%;
+    --primary-300: 222 91% 69%;
+    --primary-400: 221 83% 53%;
+    --primary-500: 221 76% 47%;
+    --primary-600: 221 69% 42%;
+    --primary-700: 221 61% 36%;
+    --primary-800: 221 53% 30%;
+    --primary-900: 221 45% 24%;
+  }
+
+  body {
+    @apply font-sans antialiased text-gray-900;
+  }
+
+  .mosaic-font-large {
+    font-size: 112.5%;
+  }
+
+  .mosaic-font-large .text-sm {
+    font-size: 0.95rem;
+  }
+
+  .mosaic-font-large .text-xl {
+    font-size: 1.35rem;
+  }
+
+  .mosaic-font-large .text-2xl {
+    font-size: 1.65rem;
+  }
+
+  .mosaic-font-large .text-4xl {
+    font-size: 2.75rem;
+  }
+}

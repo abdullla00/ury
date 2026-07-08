@@ -6,3 +6,5 @@
 ury.patches.v2_0.default_permissions
 ury.patches.v2_0.set_cashier_defaults
 ury.patches.v2_0.fix_report_date_spine
+ury.patches.v2_0.add_kds_phase2_fields
+ury.patches.v2_0.add_orders_kot_settings

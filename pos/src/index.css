@@ -59,7 +59,12 @@
     --gray-950: 240 1% 5%;
     --white: 0 0% 100%;
     --black: 0 0% 0%;
-    --order-panel-width: 24rem;
+    --order-panel-width: 23.75rem;
+    --cart-width: 380px;
+    --touch-min: 44px;
+    --floor-available: 142 76% 94%;
+    --floor-occupied: 48 96% 89%;
+    --floor-attention: 0 86% 94%;
     --badge-min-width: 1.5rem;
     --dialog-max-width: 90rem;
     --dialog-max-height: 90vh;

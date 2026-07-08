@@ -13,6 +13,8 @@
   "quantity",
   "cancelled_qty",
   "comments",
+  "modifier_text",
+  "marked_ready",
   "course",
   "serve_priority",
   "indicate_course"
@@ -49,6 +51,18 @@
    "fieldname": "comments",
    "fieldtype": "Data",
    "label": "Comments"
+  },
+  {
+   "fieldname": "modifier_text",
+   "fieldtype": "Data",
+   "label": "Modifier Text",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "marked_ready",
+   "fieldtype": "Check",
+   "label": "Marked Ready"
   },
   {
    "fieldname": "course",

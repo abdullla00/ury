@@ -7,9 +7,10 @@ import { t } from '../i18n';
 
 interface MenuListProps {
   onItemClick: (item: any) => void;
+  onItemLongPress?: (item: any) => void;
 }
 
-const MenuList: React.FC<MenuListProps> = ({ onItemClick }) => {
+const MenuList: React.FC<MenuListProps> = ({ onItemClick, onItemLongPress }) => {
   const {
     menuItems,
     menuLoading,
@@ -43,11 +44,16 @@ const MenuList: React.FC<MenuListProps> = ({ onItemClick }) => {
   const isInteractionDisabled = isMenuInteractionDisabled() || isOrderInteractionDisabled();
 
   return (
-    <div className="h-0 min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-gray-50">
+    <div className="h-0 min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-white">
       <div className="max-w-screen-xl mx-auto p-3 pb-28 sm:p-4 lg:pb-40">
         {menuLoading ? (
-          <div className="h-96">
-            <Spinner message={t('common.loading_menu_items')} />
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-52 animate-pulse rounded-xl bg-gray-200"
+              />
+            ))}
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-96">
@@ -65,7 +71,7 @@ const MenuList: React.FC<MenuListProps> = ({ onItemClick }) => {
           </div>
         ) : (
           <div className={cn(
-            "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3",
+            "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4",
             isInteractionDisabled && "opacity-50 pointer-events-none"
           )}>
             {filteredItems.map((item) => (
@@ -78,6 +84,8 @@ const MenuList: React.FC<MenuListProps> = ({ onItemClick }) => {
                 course={item.course_label || item.course}
                 item={item.item}
                 onClick={() => onItemClick(item)}
+                onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
+                hasModifiers={Boolean(item.has_modifiers || (item.variants?.length ?? 0) > 0 || (item.addons?.length ?? 0) > 0)}
                 disabled={isInteractionDisabled}
               />
             ))}

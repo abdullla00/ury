@@ -30,6 +30,7 @@
   "naming_series",
   "pos_profile",
   "comments",
+  "allergy_note",
   "branch",
   "verified",
   "order_no",
@@ -174,6 +175,13 @@
    "fieldname": "comments",
    "fieldtype": "Data",
    "label": "Comments",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "allergy_note",
+   "fieldtype": "Small Text",
+   "label": "Allergy Note",
    "read_only": 1
   },
   {

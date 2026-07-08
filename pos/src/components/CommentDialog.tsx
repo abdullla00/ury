@@ -8,9 +8,10 @@ interface CommentDialogProps {
   onClose: () => void;
   onSave: (comment: string) => void;
   initialComment?: string;
+  title?: string;
 }
 
-const CommentDialog = ({ isOpen, onClose, onSave, initialComment = '' }: CommentDialogProps) => {
+const CommentDialog = ({ isOpen, onClose, onSave, initialComment = '', title }: CommentDialogProps) => {
   const [comment, setComment] = useState(initialComment);
 
   const handleSave = () => {
@@ -32,7 +33,7 @@ const CommentDialog = ({ isOpen, onClose, onSave, initialComment = '' }: Comment
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900">
-              {t('comment.title')}
+              {title || t('comment.title')}
             </h2>
           </div>
           <Button

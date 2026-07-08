@@ -21,7 +21,9 @@
     "cancelling": "Annulation en cours...",
     "confirm_cancel": "Confirmer l'annulation",
     "loading_ury_pos": "Chargement de URY POS...",
-    "please_wait_setup": "Veuillez patienter pendant que nous préparons tout"
+    "please_wait_setup": "Veuillez patienter pendant que nous préparons tout",
+    "clear": "Effacer",
+    "remove": "Retirer"
   },
   "header": {
     "search_placeholder_default": "Rechercher commandes, articles ou clients...",
@@ -29,10 +31,26 @@
     "search_placeholder_menu": "Rechercher dans le menu",
     "switch_to_desk": "Accéder au bureau",
     "clear_cache": "Vider le cache",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "open_kds": "Écran cuisine",
+    "ury_reports": "Rapports URY",
+    "sub_pos_closing": "Clôture sous-POS",
+    "printer_docs": "Config. imprimantes",
+    "urypos_deprecation": "URY POS sur /pos remplace l'ancien /urypos. Ajoutez /pos aux favoris et videz le cache après les mises à jour.",
+    "shift_open": "OUVERT",
+    "shift_closed": "Service fermé",
+    "role_training": "Guide des rôles et formation"
   },
   "menu": {
-    "special_items": "Plats spéciaux"
+    "special_items": "Plats spéciaux",
+    "favourites": "Favoris client",
+    "customize_hint": "Options de personnalisation disponibles"
+  },
+  "aggregator": {
+    "title": "Plateforme de livraison",
+    "loading": "Chargement des partenaires...",
+    "select_placeholder": "Choisir un partenaire",
+    "menu_loaded": "Menu agrégateur chargé"
   },
   "pos_sidebar": {
     "categories": "Catégories",
@@ -42,7 +60,7 @@
     "empty_title": "Votre panier est vide",
     "empty_subtitle": "Ajoutez des articles pour commencer votre commande",
     "click_to_add": "Cliquez sur les articles pour les ajouter",
-    "double_click_hint": "Double-cliquez pour les options de personnalisation",
+    "long_press_hint": "Appui long sur un article pour personnaliser",
     "clear_cart": "Vider le panier",
     "total": "Total",
     "add_new_order": "Nouvelle commande",
@@ -54,7 +72,47 @@
     "add_comment": "Ajouter un commentaire",
     "edit_comment": "Modifier le commentaire",
     "view_cart": "Voir le panier",
-    "items_in_cart": "{count} articles dans le panier"
+    "items_in_cart": "{count} articles dans le panier",
+    "send_to_kitchen": "Envoyer en cuisine",
+    "payment": "Paiement",
+    "sent_to_kitchen": "Envoyé en cuisine",
+    "order": "Commande",
+    "order_note": "Note de commande",
+    "allergy_note": "Note allergie",
+    "customer": "Client",
+    "item_note": "Note article"
+  },
+  "actions": {
+    "menu": "Actions",
+    "release_table": "Libérer la table",
+    "release_table_blocked": "Videz le panier avant de libérer la table",
+    "table_released": "Table libérée",
+    "transfer_table": "Transférer la table",
+    "transfer_from": "Déplacer la commande de {table} vers :",
+    "transfer_success": "Table transférée avec succès",
+    "transfer_failed": "Échec du transfert de table",
+    "no_available_tables": "Aucune table disponible dans cette salle",
+    "transfer_merge_table": "Transférer / Fusionner",
+    "merge_success": "Commandes fusionnées",
+    "print_bill": "Imprimer l'addition",
+    "print_bill_success": "Addition imprimée",
+    "reprint_kot_success": "Ticket cuisine réimprimé",
+    "captain_transfer": "Transfert capitaine",
+    "captain_transfer_success": "Capitaine transféré",
+    "captain_transfer_failed": "Échec du transfert capitaine",
+    "new_order": "Nouvelle commande",
+    "set_tab": "Onglet",
+    "tab_name": "Nom de l'onglet",
+    "qr_codes": "Codes QR",
+    "print_qr_sheet": "Imprimer la feuille QR",
+    "reprint_kot": "Réimprimer ticket cuisine",
+    "cancel_kot_confirm": "Cette commande a peut-être été envoyée en cuisine. Annuler quand même ?"
+  },
+  "guest": {
+    "subtitle": "Parcourez et envoyez votre commande en cuisine",
+    "order_notes": "Instructions spéciales (facultatif)",
+    "review_and_send": "Vérifier et envoyer",
+    "customize": "Personnaliser"
   },
   "order": {
     "select_to_view": "Sélectionnez une commande pour voir les détails",
@@ -67,18 +125,34 @@
   },
   "payment": {
     "title": "Paiement",
+    "amount_due": "Montant dû",
     "apply_discount": "Appliquer une remise",
     "discount_placeholder": "Entrer %",
+    "discount_amount_placeholder": "Entrer le montant",
     "payment_methods": "Modes de paiement",
     "amount_placeholder": "Montant",
     "total_entered": "Total saisi",
     "order_summary": "Résumé de la commande",
     "subtotal": "Sous-total",
     "discount": "Remise",
+    "voucher": "Bon",
+    "voucher_placeholder": "Code coupon ou carte cadeau",
+    "voucher_hint": "Saisir un Coupon Code ERPNext",
+    "voucher_required": "Saisir un code bon",
+    "voucher_invalid": "Bon invalide ou expiré",
     "adjustment": "Ajustement",
     "total": "Total",
     "pay_button": "Payer {{amount}}",
-    "processing": "Traitement..."
+    "processing": "Traitement...",
+    "tip": "Pourboire",
+    "tip_custom": "Personnalisé",
+    "tip_amount": "Montant du pourboire",
+    "email_invoice": "Envoyer la facture par e-mail",
+    "fill_remaining": "Remplir le solde",
+    "clear_mode": "Effacer le montant",
+    "change_due": "Monnaie",
+    "remaining": "Restant",
+    "bill_split_hint": "Partage d'addition à venir."
   },
   "pos": {
     "not_opened_title": "PDV non ouvert",
@@ -86,7 +160,77 @@
     "not_closed_title": "PDV précédent non fermé",
     "not_closed_message": "Veuillez fermer l'entrée PDV précédente pour continuer.",
     "reload_page": "Recharger la page",
-    "switch_to_desk": "Accéder au bureau"
+    "switch_to_desk": "Accéder au bureau",
+    "shift_gate": {
+      "business_date": "Date d'exploitation",
+      "primary_open": "Ouvrir la caisse",
+      "primary_close": "Fermer la session précédente",
+      "check_again": "J'ai soumis — Continuer",
+      "advanced_desk": "Avancé : Ouvrir le bureau",
+      "no_permission": "Vous n'avez pas la permission d'ouvrir la caisse. Demandez au responsable.",
+      "expected_floats": "Fonds d'ouverture attendus",
+      "expected_floats_hint": "Saisissez ces montants dans le bureau, puis soumettez.",
+      "navigating_open": "Ouverture…",
+      "navigating_close": "Fermeture…",
+      "zero_sales_hint": "Sans ventes hier, une clôture à zéro peut être nécessaire.",
+      "business_day_rule": "La journée d'exploitation change à 5h00 — fermez la veille avant d'ouvrir aujourd'hui.",
+      "view_stale_entry": "Voir l'ouverture précédente",
+      "session_expired": "Votre session a expiré dans le bureau. Reconnectez-vous puis appuyez sur Continuer.",
+      "desk_return_banner": "Soumettez ce formulaire pour revenir à URY POS",
+      "poll_checking": "Vérification de la session…",
+      "poll_updated": "Statut de session mis à jour.",
+      "error_at": "Dernière erreur à {{time}}",
+      "error_retry_in": "Réessayer dans {{seconds}} s…",
+      "opening": {
+        "title": "Commencer votre session",
+        "step1": "Ouvrir POS Opening Entry dans le bureau",
+        "step2": "Saisir les fonds d'ouverture par mode de paiement",
+        "step3": "Soumettre — retour automatique ici",
+        "checklist_profile": "Profil PDV prêt",
+        "checklist_floats": "Fonds comptés",
+        "checklist_submit": "Soumettre dans le bureau"
+      },
+      "draft": {
+        "title": "Terminer le brouillon de session",
+        "warning": "Brouillon de session non soumis. Reprenez-le et soumettez pour continuer.",
+        "resume": "Reprendre et soumettre",
+        "start_fresh": "Recommencer",
+        "start_fresh_blocked": "Une autre session est déjà ouverte — terminez ou supprimez votre brouillon."
+      },
+      "outdated": {
+        "title": "Session précédente encore ouverte",
+        "step_close": "Fermer la session d'hier dans le bureau",
+        "step_open": "Ouvrir POS Opening Entry pour aujourd'hui"
+      },
+      "closing": {
+        "title": "Fermer hier avant de continuer"
+      },
+      "waiting_main": {
+        "title": "En attente du caissier principal",
+        "main_cashier": "{{name}} doit ouvrir la caisse en premier.",
+        "contact": "Contacter le caissier principal"
+      },
+      "closing_queued": {
+        "title": "Fermeture en cours…",
+        "message": "La fermeture peut prendre un moment — vous reviendrez au PDV une fois terminé. Appuyez sur Continuer pour vérifier."
+      },
+      "blocked_by_other": {
+        "title": "Session déjà ouverte",
+        "message": "{{name}} a déjà ouvert la caisse pour ce PDV.",
+        "view": "Voir l'ouverture"
+      },
+      "error": {
+        "title": "Impossible de vérifier la session",
+        "retry": "Réessayer"
+      }
+    },
+    "shift_welcome": {
+      "title": "Session ouverte",
+      "subtitle": "Vous pouvez prendre des commandes.",
+      "start_orders": "Commencer à prendre des commandes",
+      "opening_entry": "Ouverture",
+      "skip": "Appuyez n'importe où pour continuer"
+    }
   },
   "customer": {
     "search_placeholder": "Rechercher un client...",
@@ -106,10 +250,12 @@
     "select_territory": "Sélectionner un territoire",
     "adding": "Ajout du client...",
     "add_button": "Ajouter le client",
-    "failed_create": "Échec de la création du client. Veuillez réessayer."
+    "failed_create": "Échec de la création du client. Veuillez réessayer.",
+    "add_customer": "Ajouter un client",
+    "change_customer": "Changer de client"
   },
   "comment": {
-    "title": "Commentaires de la commande",
+    "title": "Note de commande",
     "label": "Ajouter des commentaires pour cette commande",
     "placeholder": "Entrez des instructions spéciales ou des commentaires...",
     "save_button": "Enregistrer le commentaire"
@@ -151,6 +297,32 @@
     "no_orders_found": "Aucune commande trouvée",
     "click_to_view": "Cliquez sur n'importe quel badge de commande pour voir ses détails",
     "status_title": "Statut de la commande",
+    "items_label": "articles",
+    "copy_order": "Copier n° commande",
+    "copied_order": "Numéro de commande copié",
+    "open_kds_station": "Ouvrir KDS — {{station}}",
+    "kitchen_status": "Statut cuisine",
+    "order_note": "Note de commande",
+    "allergy_note": "Allergie",
+    "no_match": "Aucun résultat pour « {{query}} »",
+    "clear_search": "Effacer la recherche",
+    "empty_draft": "Aucun brouillon",
+    "empty_unbilled": "Aucune commande non facturée",
+    "empty_paid": "Aucune commande payée",
+    "empty_consolidated": "Aucune commande consolidée",
+    "empty_return": "Aucun retour",
+    "empty_recently_paid": "Aucune commande payée récemment",
+    "kot_filter": {
+      "all": "Tout",
+      "in_kitchen": "En cuisine",
+      "delayed": "En retard",
+      "not_sent": "Non envoyé"
+    },
+    "kitchen_summary": {
+      "in_kitchen": "🔥 {{count}} en cuisine",
+      "delayed": "⚠ {{count}} en retard",
+      "not_sent": "○ {{count}} non envoyé"
+    },
     "pagination": {
       "previous": "Précédent",
       "next": "Suivant",
@@ -168,6 +340,10 @@
     "room": "Salle",
     "seats": "Sièges",
     "tap_to_start": "Appuyez pour commencer une nouvelle commande sur place",
+    "all_available_title": "Toutes les tables sont disponibles",
+    "all_available_subtitle": "Appuyez sur une table pour démarrer une commande sur place",
+    "tap_to_resume": "Appuyez pour reprendre la commande",
+    "jump_placeholder": "Aller à la table…",
     "no_tables_found": "Aucune table trouvée pour cette salle",
     "edit_settings": "Modifier les paramètres de la table",
     "table_info": "Informations sur la table",
@@ -198,9 +374,14 @@
     "zoom_pan_hint": "Utilisez le défilement pour zoomer • Faites glisser l'arrière-plan pour déplacer"
   },
   "footer": {
-    "pos": "PDV",
+    "pos": "POS",
     "table": "Table",
     "orders": "Commandes"
+  },
+  "context": {
+    "table": "Table",
+    "item_count": "{count} articles",
+    "editing": "Modification {orderId}"
   },
   "product_dialog": {
     "special_instructions": "Instructions spéciales",
@@ -228,5 +409,13 @@
     "paid": "Payé",
     "consolidated": "Consolidé",
     "return": "Retour"
+  },
+  "kot_status": {
+    "not_sent": "Non envoyé",
+    "in_kitchen": "En cuisine",
+    "ready": "Prêt",
+    "served": "Terminé",
+    "cancel_pending": "Annulation en attente",
+    "partial": "Partiel"
   }
 }

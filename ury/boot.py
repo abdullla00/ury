@@ -1,7 +1,10 @@
 import frappe
+from frappe import _
 
 URY_CASHIER_ROLES = {"URY Cashier"}
 URY_MANAGER_ROLES = {"URY Manager", "System Manager"}
+
+DESK_RETURN_BANNER_MSGID = "Submit this form to return to URY POS"
 
 
 def _get_user_branch():
@@ -30,8 +33,10 @@ def extend_bootinfo(bootinfo):
 		bootinfo.ury_branch = branch
 
 	if frappe.session.user == "Administrator":
+		bootinfo.ury_pos_desk_return_banner = _(DESK_RETURN_BANNER_MSGID)
 		return
 
 	roles = set(frappe.get_roles())
+	bootinfo.ury_pos_desk_return_banner = _(DESK_RETURN_BANNER_MSGID)
 	if URY_CASHIER_ROLES.intersection(roles) and not URY_MANAGER_ROLES.intersection(roles):
 		bootinfo.ury_home = "/pos"

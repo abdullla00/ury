@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { t } from '../i18n';
 import { Star, TrendingUp } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
@@ -6,10 +6,12 @@ import OrderPanel from '../components/OrderPanel';
 import ProductDialog from '../components/ProductDialog';
 import MenuList from '../components/MenuList';
 import SearchBar from '../components/SearchBar';
-import { usePOSStore } from '../store/pos-store';
+import { usePOSStore, type MenuItem } from '../store/pos-store';
 import { cn } from '../lib/utils';
 import { Spinner } from '../components/ui/spinner';
 import InitialLoader from '../components/InitialLoader';
+import FavouriteItemsRow from '../components/FavouriteItemsRow';
+import { showToast } from '../components/ui/toast';
 
 export default function POS() {
   const {
@@ -27,8 +29,6 @@ export default function POS() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const clickCountRef = useRef(0);
 
   useEffect(() => {
     if (showSearch) {
@@ -37,26 +37,27 @@ export default function POS() {
     }
   }, [showSearch]);
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: MenuItem) => {
     if (isMenuInteractionDisabled()) return;
-    
-    clickCountRef.current += 1;
-    
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current);
+
+    const hasVariants =
+      item.has_modifiers ||
+      (item.variants?.length ?? 0) > 0 ||
+      (item.addons?.length ?? 0) > 0;
+    if (hasVariants) {
+      setSelectedItem(item);
+      setIsDialogOpen(true);
+      return;
     }
 
-    clickTimerRef.current = setTimeout(() => {
-      if (clickCountRef.current === 1) {
-        // Single click - add to cart
-        addToOrder({ ...item, quantity: 1 });
-      } else if (clickCountRef.current === 2) {
-        // Double click - open dialog
-        setSelectedItem(item);
-        setIsDialogOpen(true);
-      }
-      clickCountRef.current = 0;
-    }, 250); // 250ms threshold for double click
+    addToOrder({ ...item, quantity: 1 });
+    showToast.success(`+1 ${item.name}`);
+  };
+
+  const handleItemCustomize = (item: MenuItem) => {
+    if (isMenuInteractionDisabled()) return;
+    setSelectedItem(item);
+    setIsDialogOpen(true);
   };
 
   const QuickFilterButton = ({ filter, icon: Icon, label }: { 
@@ -123,7 +124,7 @@ export default function POS() {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
       <Sidebar disabled={isMenuInteractionDisabled()} />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:pe-96">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:pe-[var(--cart-width)]">
         <div className="border-b border-gray-200 bg-white p-3 sm:p-4">
           <div className="mx-auto max-w-screen-xl">
             <div className="flex items-center gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
@@ -133,7 +134,12 @@ export default function POS() {
           </div>
         </div>
 
-        <MenuList onItemClick={handleItemClick} />
+        <FavouriteItemsRow
+          onItemClick={handleItemClick}
+          disabled={isMenuInteractionDisabled()}
+        />
+
+        <MenuList onItemClick={handleItemClick} onItemLongPress={handleItemCustomize} />
       </div>
       <OrderPanel />
       {isDialogOpen && <ProductDialog onClose={() => setIsDialogOpen(false)} />}

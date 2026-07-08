@@ -1,5 +1,6 @@
 import { call } from './frappe-sdk';
 import { OrderType } from '../data/order-types';
+import type { KotStationStatus, KotSummaryStatus } from '../store/slices/orders-slice';
 
 export interface POSInvoice {
   name: string;
@@ -17,6 +18,13 @@ export interface POSInvoice {
   posting_date: string;
   rounded_total: number;
   order_type: OrderType;
+  custom_comments?: string | null;
+  custom_allergy_note?: string | null;
+  item_count?: number;
+  kot_summary?: KotSummaryStatus;
+  kot_stations?: KotStationStatus[];
+  kot_modified?: boolean;
+  kot_delayed?: boolean;
 }
 
 export interface POSInvoiceItem {
@@ -42,6 +50,13 @@ interface GetPOSInvoicesParams {
   limit?: number;
   limit_start?: number;
   paid_limit?: number;
+  kot_filter?: string;
+}
+
+export interface KotFilterCounts {
+  in_kitchen: number;
+  delayed: number;
+  not_sent: number;
 }
 
 interface GetPOSInvoiceItemsResponse {
@@ -52,10 +67,10 @@ export async function getPOSInvoices({
   status, 
   limit, 
   limit_start,
-  paid_limit
+  paid_limit,
+  kot_filter,
 }: GetPOSInvoicesParams) {
   try {
-    // Use paid_limit as the limit for Recently Paid status
     const actualLimit = status === 'Recently Paid' && paid_limit ? paid_limit : limit;
     
     const response = await call.get<GetPOSInvoicesResponse>(
@@ -63,7 +78,8 @@ export async function getPOSInvoices({
       {
         status,
         limit: actualLimit,
-        limit_start
+        limit_start,
+        kot_filter: kot_filter && kot_filter !== 'all' ? kot_filter : undefined,
       }
     );
 
@@ -111,17 +127,33 @@ export async function updateInvoiceStatus(
   }
 } 
 
-export async function searchPosInvoice(query: string, status: string) {
+export async function searchPosInvoice(query: string, status: string, kot_filter?: string) {
   try {
     const response = await call.get('ury.ury_pos.api.searchPosInvoice', {
       query,
       status,
+      kot_filter: kot_filter && kot_filter !== 'all' ? kot_filter : undefined,
     });
     return response.message;
   } catch (error) {
     console.error('Error searching POS invoices:', error);
     throw error;
   }
+}
+
+export async function getOrderStatusCounts(): Promise<Record<string, number>> {
+  const response = await call.get<{ message: Record<string, number> }>(
+    'ury.ury_pos.api.get_order_status_counts',
+  );
+  return response.message ?? {};
+}
+
+export async function getKotFilterCounts(status: string): Promise<KotFilterCounts> {
+  const response = await call.get<{ message: KotFilterCounts }>(
+    'ury.ury_pos.api.get_kot_filter_counts',
+    { status },
+  );
+  return response.message ?? { in_kitchen: 0, delayed: 0, not_sent: 0 };
 } 
 
 export async function getInvoicePrintHtml(invoiceId: string, printFormat: string) {

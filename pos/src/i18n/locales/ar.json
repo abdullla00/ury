@@ -28,7 +28,9 @@
         "cancelling": "جاري الإلغاء...",
         "confirm_cancel": "تأكيد الإلغاء",
         "loading_ury_pos": "جاري تحميل URY POS...",
-        "please_wait_setup": "يرجى الانتظار بينما نقوم بضبط الأشياء..."
+        "please_wait_setup": "يرجى الانتظار بينما نقوم بضبط الأشياء...",
+        "clear": "مسح",
+        "remove": "إزالة"
     },
     "header": {
         "search_placeholder_default": "ابحث عن الطلبات، عناصر القائمة، أو العملاء...",
@@ -36,10 +38,26 @@
         "search_placeholder_menu": "ابحث في القائمة",
         "switch_to_desk": "التبديل إلى المكتب",
         "clear_cache": "مسح ذاكرة التخزين المؤقت",
-        "logout": "تسجيل الخروج"
+        "logout": "تسجيل الخروج",
+        "open_kds": "شاشة المطبخ",
+        "ury_reports": "تقارير URY",
+        "sub_pos_closing": "إغلاق نقطة البيع الفرعية",
+        "printer_docs": "إعداد الطابعات",
+        "urypos_deprecation": "نقطة البيع الجديدة على /pos تحل محل /urypos القديم. يرجى حفظ /pos ومسح ذاكرة التخزين المؤقت بعد التحديثات.",
+        "shift_open": "مفتوح",
+        "shift_closed": "الوردية مغلقة",
+        "role_training": "دليل الأدوار والتدريب"
     },
     "menu": {
-        "special_items": "أصناف مميزة"
+        "special_items": "أصناف مميزة",
+        "favourites": "مفضلات العميل",
+        "customize_hint": "يحتوي على خيارات تخصيص"
+    },
+    "aggregator": {
+        "title": "منصة التوصيل",
+        "loading": "جاري تحميل الشركاء...",
+        "select_placeholder": "اختر شريك التوصيل",
+        "menu_loaded": "تم تحميل قائمة المنصة"
     },
     "pos_sidebar": {
         "categories": "فئات",
@@ -49,7 +67,7 @@
         "empty_title": "عربة التسوق فارغة",
         "empty_subtitle": "أضف عناصر للبدء في طلبك",
         "click_to_add": "انقر على العناصر لإضافتها",
-        "double_click_hint": "انقر مرتين لخيارات التخصيص",
+        "long_press_hint": "اضغط مطولاً على أي صنف للتخصيص",
         "clear_cart": "إفراغ العربة",
         "total": "الإجمالي",
         "add_new_order": "إضافة طلب جديد",
@@ -61,7 +79,47 @@
         "add_comment": "إضافة تعليق",
         "edit_comment": "تعديل التعليق",
         "view_cart": "عرض العربة",
-        "items_in_cart": "{count} عناصر في العربة"
+        "items_in_cart": "{count} عناصر في العربة",
+        "send_to_kitchen": "إرسال للمطبخ",
+        "payment": "الدفع",
+        "sent_to_kitchen": "تم الإرسال للمطبخ",
+        "order": "الطلب",
+        "order_note": "ملاحظة الطلب",
+        "allergy_note": "ملاحظة الحساسية",
+        "customer": "العميل",
+        "item_note": "ملاحظة الصنف"
+    },
+    "actions": {
+        "menu": "إجراءات",
+        "release_table": "تحرير الطاولة",
+        "release_table_blocked": "أفرغ العربة قبل تحرير الطاولة",
+        "table_released": "تم تحرير الطاولة",
+        "transfer_table": "نقل الطاولة",
+        "transfer_from": "نقل الطلب من {table} إلى:",
+        "transfer_success": "تم نقل الطاولة بنجاح",
+        "transfer_failed": "فشل نقل الطاولة",
+        "no_available_tables": "لا توجد طاولات متاحة في هذه القاعة",
+        "transfer_merge_table": "نقل / دمج",
+        "merge_success": "تم دمج الطلبات بنجاح",
+        "print_bill": "طباعة الفاتورة",
+        "print_bill_success": "تمت طباعة الفاتورة",
+        "reprint_kot_success": "تمت إعادة طباعة تذكرة المطبخ",
+        "captain_transfer": "نقل الكابتن",
+        "captain_transfer_success": "تم نقل الكابتن",
+        "captain_transfer_failed": "فشل نقل الكابتن",
+        "new_order": "طلب جديد",
+        "set_tab": "تعيين تبويب",
+        "tab_name": "اسم التبويب",
+        "qr_codes": "رموز QR",
+        "print_qr_sheet": "طباعة ورقة QR",
+        "reprint_kot": "إعادة طباعة تذكرة المطبخ",
+        "cancel_kot_confirm": "ربما تم إرسال هذا الطلب إلى المطبخ. هل تريد الإلغاء على أي حال؟"
+    },
+    "guest": {
+        "subtitle": "تصفح وأرسل طلبك إلى المطبخ",
+        "order_notes": "تعليمات خاصة (اختياري)",
+        "review_and_send": "مراجعة وإرسال",
+        "customize": "تخصيص"
     },
     "order": {
         "select_to_view": "حدد طلبًا لعرض التفاصيل",
@@ -74,18 +132,34 @@
     },
     "payment": {
         "title": "الدفع",
+        "amount_due": "المبلغ المستحق",
         "apply_discount": "تطبيق الخصم",
         "discount_placeholder": "أدخل نسبة %",
+        "discount_amount_placeholder": "أدخل المبلغ",
         "payment_methods": "طرق الدفع",
         "amount_placeholder": "المبلغ",
         "total_entered": "الإجمالي المدخل",
         "order_summary": "ملخص الطلب",
         "subtotal": "المجموع الفرعي",
         "discount": "الخصم",
+        "voucher": "قسيمة",
+        "voucher_placeholder": "رمز القسيمة أو بطاقة الهدايا",
+        "voucher_hint": "أدخل رمز Coupon Code من ERPNext",
+        "voucher_required": "أدخل رمز القسيمة",
+        "voucher_invalid": "قسيمة غير صالحة أو منتهية",
         "adjustment": "التسوية",
         "total": "الإجمالي",
         "pay_button": "دفع {{amount}}",
-        "processing": "جاري المعالجة..."
+        "processing": "جاري المعالجة...",
+        "tip": "إكرامية",
+        "tip_custom": "مخصص",
+        "tip_amount": "مبلغ الإكرامية",
+        "email_invoice": "إرسال الفاتورة بالبريد",
+        "fill_remaining": "تعبئة المتبقي",
+        "clear_mode": "مسح المبلغ",
+        "change_due": "الباقي",
+        "remaining": "متبقي",
+        "bill_split_hint": "تقسيم الفاتورة قادم في إصدار لاحق."
     },
     "pos": {
         "not_opened_title": "نقطة البيع غير مفتوحة",
@@ -93,7 +167,77 @@
         "not_opened_message": "يجب فتح وردية نقطة بيع جديدة للبدء.",
         "not_closed_message": "يجب إغلاق وردية نقطة البيع السابقة قبل البدء بوردية جديدة. يرجى إغلاقها للمتابعة.",
         "reload_page": "إعادة تحميل الصفحة",
-        "switch_to_desk": "التبديل إلى لوحة التحكم (Desk)"
+        "switch_to_desk": "التبديل إلى لوحة التحكم (Desk)",
+        "shift_gate": {
+            "business_date": "تاريخ العمل",
+            "primary_open": "فتح وردية نقطة البيع",
+            "primary_close": "إغلاق الوردية السابقة",
+            "check_again": "تم الإرسال — متابعة",
+            "advanced_desk": "متقدم: فتح Desk",
+            "no_permission": "ليس لديك صلاحية لفتح الوردية. اطلب من المدير.",
+            "expected_floats": "أرصدة الافتتاح المتوقعة",
+            "expected_floats_hint": "أدخل هذه المبالغ في Desk ثم أرسل.",
+            "navigating_open": "جاري الفتح…",
+            "navigating_close": "جاري الإغلاق…",
+            "zero_sales_hint": "إن لم تكن هناك مبيعات أمس، قد تحتاج لإغلاق بمبلغ صفر.",
+            "business_day_rule": "يُحدَّث يوم العمل عند 5:00 صباحاً — أغلق اليوم السابق قبل فتح اليوم.",
+            "view_stale_entry": "عرض قيد الافتتاح السابق",
+            "session_expired": "انتهت جلستك أثناء العمل في Desk. سجّل الدخول ثم اضغط متابعة.",
+            "desk_return_banner": "أرسل هذا النموذج للعودة إلى URY POS",
+            "poll_checking": "جاري التحقق من حالة الوردية…",
+            "poll_updated": "تم تحديث حالة الوردية.",
+            "error_at": "آخر خطأ في {{time}}",
+            "error_retry_in": "إعادة المحاولة خلال {{seconds}} ث…",
+            "opening": {
+                "title": "ابدأ ورديتك",
+                "step1": "افتح POS Opening Entry في Desk",
+                "step2": "أدخل أرصدة الافتتاح لكل طريقة دفع",
+                "step3": "أرسل — ستعود هنا تلقائياً",
+                "checklist_profile": "ملف POS جاهز",
+                "checklist_floats": "تم عد الأرصدة",
+                "checklist_submit": "الإرسال في Desk"
+            },
+            "draft": {
+                "title": "أكمل مسودة الوردية",
+                "warning": "لديك مسودة وردية غير مرسلة. استأنفها وأرسل للمتابعة.",
+                "resume": "استئناف وإرسال الوردية",
+                "start_fresh": "بدء جديد",
+                "start_fresh_blocked": "وردية أخرى مفتوحة بالفعل — أكمل مسودتك أو احذفها بدلاً من البدء من جديد."
+            },
+            "outdated": {
+                "title": "الوردية السابقة ما زالت مفتوحة",
+                "step_close": "أغلق وردية أمس في Desk",
+                "step_open": "افتح POS Opening Entry لليوم"
+            },
+            "closing": {
+                "title": "أغلق أمس قبل المتابعة"
+            },
+            "waiting_main": {
+                "title": "في انتظار الكاشير الرئيسي",
+                "main_cashier": "يجب على {{name}} فتح الوردية أولاً.",
+                "contact": "مراسلة الكاشير الرئيسي"
+            },
+            "closing_queued": {
+                "title": "جاري الإغلاق…",
+                "message": "قد يستغرق الإغلاق لحظة — ستعود إلى POS عند الانتهاء. اضغط متابعة للتحقق مرة أخرى."
+            },
+            "blocked_by_other": {
+                "title": "الوردية مفتوحة بالفعل",
+                "message": "{{name}} فتح الوردية لهذا POS.",
+                "view": "عرض قيد الافتتاح"
+            },
+            "error": {
+                "title": "تعذر التحقق من الوردية",
+                "retry": "إعادة المحاولة"
+            }
+        },
+        "shift_welcome": {
+            "title": "تم فتح الوردية",
+            "subtitle": "أنت جاهز لاستقبال الطلبات.",
+            "start_orders": "ابدأ باستقبال الطلبات",
+            "opening_entry": "قيد الافتتاح",
+            "skip": "اضغط في أي مكان للمتابعة"
+        }
     },
     "customer": {
         "search_placeholder": "ابحث عن عميل...",
@@ -113,10 +257,12 @@
         "select_territory": "حدد المنطقة",
         "adding": "جاري إضافة العميل...",
         "add_button": "إضافة العميل",
-        "failed_create": "فشل في إنشاء العميل. يرجى المحاولة مرة أخرى."
+        "failed_create": "فشل في إنشاء العميل. يرجى المحاولة مرة أخرى.",
+        "add_customer": "إضافة عميل",
+        "change_customer": "تغيير العميل"
     },
     "comment": {
-        "title": "تعليقات الطلب",
+        "title": "ملاحظة الطلب",
         "label": "أضف تعليقات لهذا الطلب",
         "placeholder": "أدخل أي تعليمات خاصة أو تعليقات...",
         "save_button": "حفظ التعليق"
@@ -158,6 +304,32 @@
         "no_orders_found": "لم يتم العثور على طلبات",
         "click_to_view": "انقر على أي بطاقة طلب لعرض تفاصيلها",
         "status_title": "حالة الطلب",
+        "items_label": "عناصر",
+        "copy_order": "نسخ رقم الطلب",
+        "copied_order": "تم نسخ رقم الطلب",
+        "open_kds_station": "فتح شاشة المطبخ — {{station}}",
+        "kitchen_status": "حالة المطبخ",
+        "order_note": "ملاحظة الطلب",
+        "allergy_note": "حساسية",
+        "no_match": "لا توجد نتائج لـ \"{{query}}\"",
+        "clear_search": "مسح البحث",
+        "empty_draft": "لا توجد طلبات مسودة",
+        "empty_unbilled": "لا توجد طلبات غير مفوترة",
+        "empty_paid": "لا توجد طلبات مدفوعة",
+        "empty_consolidated": "لا توجد طلبات مجمعة",
+        "empty_return": "لا توجد مرتجعات",
+        "empty_recently_paid": "لا توجد طلبات مدفوعة مؤخراً",
+        "kot_filter": {
+            "all": "الكل",
+            "in_kitchen": "في المطبخ",
+            "delayed": "متأخر",
+            "not_sent": "لم يُرسل"
+        },
+        "kitchen_summary": {
+            "in_kitchen": "🔥 {{count}} في المطبخ",
+            "delayed": "⚠ {{count}} متأخر",
+            "not_sent": "○ {{count}} لم يُرسل"
+        },
         "pagination": {
             "previous": "السابق",
             "next": "التالي",
@@ -175,6 +347,10 @@
         "room": "غرفة",
         "seats": "مقاعد",
         "tap_to_start": "انقر لبدء طلب محلي جديد",
+        "all_available_title": "جميع الطاولات متاحة",
+        "all_available_subtitle": "انقر على طاولة لبدء طلب محلي جديد",
+        "tap_to_resume": "انقر لاستئناف الطلب",
+        "jump_placeholder": "الانتقال إلى طاولة…",
         "no_tables_found": "لم يتم العثور على طاولات لهذه الغرفة",
         "edit_settings": "تعديل إعدادات الطاولة",
         "table_info": "معلومات الطاولة",
@@ -205,9 +381,14 @@
         "zoom_pan_hint": "استخدم التمرير للتكبير • اسحب الخلفية للتحريك"
     },
     "footer": {
-        "pos": "نقطة البيع",
+        "pos": "POS",
         "table": "طاولة",
         "orders": "الطلبات"
+    },
+    "context": {
+        "table": "طاولة",
+        "item_count": "{count} عناصر",
+        "editing": "تعديل {orderId}"
     },
     "product_dialog": {
         "special_instructions": "تعليمات خاصة",
@@ -235,5 +416,13 @@
         "paid": "مدفوع",
         "consolidated": "مجمع",
         "return": "مرتجع"
+    },
+    "kot_status": {
+        "not_sent": "لم يُرسل",
+        "in_kitchen": "في المطبخ",
+        "ready": "جاهز",
+        "served": "منتهي",
+        "cancel_pending": "إلغاء معلق",
+        "partial": "جزئي"
     }
 }

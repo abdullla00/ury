@@ -8,13 +8,19 @@ import {
   Monitor,
   LogOut,
   RefreshCw,
+  Wallet,
+  X,
+  ChefHat,
 } from 'lucide-react';
 import { Button, Input } from './ui';
+import { cn } from '../lib/utils';
 import { useRootStore } from '../store/root-store';
 import { usePOSStore } from '../store/pos-store';
 import type { RootState } from '../store/root-store';
 import { logout } from '../lib/auth-api';
 import { showToast } from './ui/toast';
+import { getPosShiftInfo, type PosShiftInfo } from '../lib/shift-api';
+import { consumeShiftPillPulse } from '../lib/pos-opening-api';
 
 const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -22,9 +28,14 @@ const Header = () => {
   const user = useRootStore((state: RootState) => state.user);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
-  const { searchQuery, setSearchQuery } = usePOSStore();
+  const { posProfile, searchQuery, setSearchQuery } = usePOSStore();
   const { orderSearchQuery, setOrderSearchQuery } = useRootStore();
   const [orderSearchInput, setOrderSearchInput] = useState(orderSearchQuery);
+  const [showLegacyBanner, setShowLegacyBanner] = useState(
+    () => !localStorage.getItem('urypos_banner_dismissed'),
+  );
+  const [shiftInfo, setShiftInfo] = useState<PosShiftInfo | null>(null);
+  const [shiftPillPulse, setShiftPillPulse] = useState(false);
 
   // Determine placeholder and handlers based on route
   let searchPlaceholder = t('header.search_placeholder_default');
@@ -56,6 +67,30 @@ const Header = () => {
     }
   }, [location.pathname, orderSearchQuery]);
 
+  useEffect(() => {
+    if (!posProfile?.branch) {
+      return;
+    }
+    getPosShiftInfo()
+      .then(setShiftInfo)
+      .catch(() => setShiftInfo({ status: 'closed' }));
+  }, [posProfile?.branch]);
+
+  useEffect(() => {
+    if (consumeShiftPillPulse()) {
+      setShiftPillPulse(true);
+      const timer = window.setTimeout(() => setShiftPillPulse(false), 2000);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, []);
+
+  useEffect(() => {
+    const onFocusSearch = () => searchInputRef.current?.focus();
+    window.addEventListener('ury-focus-search', onFocusSearch);
+    return () => window.removeEventListener('ury-focus-search', onFocusSearch);
+  }, []);
+
   // Handle clicks outside of menus
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -76,10 +111,18 @@ const Header = () => {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
+      if (e.key === 'F4') {
+        e.preventDefault();
+        window.location.href = '/pos/table';
+      }
+      if (e.key === 'F2' && location.pathname === '/') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('ury-open-payment'));
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [location.pathname]);
 
   const handleUserMenuToggle = () => {
     setShowUserMenu(!showUserMenu);
@@ -105,6 +148,22 @@ const Header = () => {
 
   return (
     <header className="border-b border-gray-200 bg-white">
+      {showLegacyBanner && (
+        <div className="flex items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:px-6">
+          <span>{t('header.urypos_deprecation')}</span>
+          <button
+            type="button"
+            className="rounded p-1 hover:bg-amber-100"
+            onClick={() => {
+              localStorage.setItem('urypos_banner_dismissed', '1');
+              setShowLegacyBanner(false);
+            }}
+            aria-label={t('common.close')}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:gap-4 sm:px-6">
         <div className="flex flex-shrink-0 items-center">
           <Link to="/" className="flex items-center gap-2 sm:gap-3">
@@ -130,6 +189,65 @@ const Header = () => {
           </div>
         </div>
 
+        {posProfile?.kds_production_unit && (
+          <a
+            href={`/URYMosaic/${encodeURIComponent(posProfile.kds_production_unit)}`}
+            target="_blank"
+            rel="noreferrer"
+            title={`${t('header.open_kds')} — ${posProfile.kds_production_unit}`}
+            className="me-2 hidden items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-800 md:inline-flex"
+          >
+            <ChefHat className="h-4 w-4 shrink-0" />
+            <span className="hidden lg:inline">{t('header.open_kds')}</span>
+          </a>
+        )}
+
+        {shiftInfo && (
+          <button
+            type="button"
+            onClick={() => {
+              if (shiftInfo.status === 'open' && shiftInfo.opening_entry) {
+                window.open(
+                  `/app/pos-opening-entry/${encodeURIComponent(shiftInfo.opening_entry)}`,
+                  '_blank',
+                );
+              } else if (posProfile?.multiple_cashier === 1) {
+                window.open('/app/sub-pos-closing', '_blank');
+              }
+            }}
+            className={cn(
+              'relative me-2 hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium md:flex',
+              shiftInfo.status === 'open'
+                ? 'bg-emerald-50 text-emerald-800'
+                : 'bg-red-50 text-red-700',
+            )}
+            title={posProfile?.name}
+          >
+            <span className="relative flex h-2 w-2 shrink-0">
+              {shiftPillPulse ? (
+                <span
+                  className={cn(
+                    'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75',
+                    shiftInfo.status === 'open' ? 'bg-emerald-400' : 'bg-red-400',
+                  )}
+                  aria-hidden
+                />
+              ) : null}
+              <span
+                className={cn(
+                  'relative inline-flex h-2 w-2 rounded-full',
+                  shiftInfo.status === 'open' ? 'bg-emerald-500' : 'bg-red-500',
+                )}
+              />
+            </span>
+            <span className="max-w-[10rem] truncate">
+              {shiftInfo.status === 'open'
+                ? `${t('header.shift_open')} · ${shiftInfo.opening_entry}`
+                : t('header.shift_closed')}
+            </span>
+          </button>
+        )}
+
         <div className="flex flex-shrink-0 items-center">
           <div className="relative" ref={userMenuRef}>
             <Button
@@ -154,10 +272,22 @@ const Header = () => {
                   <p className="text-sm text-gray-500">{user?.name || ''}</p>
                 </div>
                 <div className="py-2">
+                  {posProfile?.multiple_cashier === 1 && (
+                    <Button
+                      variant="ghost"
+                      className="flex w-full items-center justify-start px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                      onClick={() => window.open('/app/sub-pos-closing', '_blank')}
+                    >
+                      <Wallet className="me-3 h-4 w-4" />
+                      {t('header.sub_pos_closing')}
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
-                    className="flex justify-start items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    onClick={() => window.location.href = '/app'}
+                    className="flex w-full items-center justify-start px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                    onClick={() => {
+                      window.location.href = '/app';
+                    }}
                   >
                     <Monitor className="w-4 h-4 me-3" />
                     {t('header.switch_to_desk')}

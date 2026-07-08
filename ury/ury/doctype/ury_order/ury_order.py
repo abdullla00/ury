@@ -3,7 +3,10 @@
 
 import json
 import frappe
+import hashlib
+import hmac
 from frappe import _
+from frappe.utils import cint
 from frappe.model.document import Document
 from erpnext.controllers.queries import item_query
 from ury.ury_pos.api import getBranch, getBranchRoom, refresh_outdated_pos_opening_entries
@@ -126,7 +129,8 @@ def sync_order(
     comments=None,
     order_type=None,
     aggregator_id=None,
-    room=None
+    room=None,
+    allergy_note=None,
 ):
     
     user_role = frappe.get_roles()
@@ -214,6 +218,8 @@ def sync_order(
     invoice.mobile_number = customerdoc.mobile_number
     if comments:
         invoice.custom_comments = comments
+    if allergy_note:
+        invoice.custom_allergy_note = allergy_note
     invoice.no_of_pax = no_of_pax
     invoice.pos_profile = pos_profile
     invoice.cashier = cashier
@@ -319,9 +325,12 @@ def sync_order(
         kot_execute(invoice.name, customer, table, items, past_item, comments)
 
     except Exception as e:
-        # If an exception occurs (e.g., "kot" app not found), it will be caught here without affect the code execution.
-        error_msg = f"KOT Creation Failes {str(e)}"            
+        error_msg = f"KOT Creation Failed: {str(e)}"
         frappe.log_error(error_msg, "KOT Error")
+        frappe.throw(
+            _("Order was saved but the kitchen ticket could not be created: {0}").format(str(e)),
+            title=_("Kitchen ticket error"),
+        )
 
     # table status
     if table and invoice.invoice_printed == 0:
@@ -494,6 +503,58 @@ def table_transfer(table, newTable, invoice):
 
 
 @frappe.whitelist()
+def table_merge(table, targetTable, invoice):
+    """Merge source table order into an occupied target table order (Odoo merge)."""
+    current_table = frappe.get_doc("URY Table", table)
+    target_table = frappe.get_doc("URY Table", targetTable)
+    source_invoice = frappe.get_doc("POS Invoice", invoice)
+
+    if current_table.restaurant_room != target_table.restaurant_room:
+        frappe.throw(_("Table merge between different rooms is restricted."))
+
+    if target_table.occupied != 1:
+        frappe.throw(_("Target table must be occupied to merge orders."))
+
+    if table == targetTable:
+        frappe.throw(_("Cannot merge a table with itself."))
+
+    target_invoice_name = frappe.db.get_value(
+        "POS Invoice",
+        {
+            "restaurant_table": targetTable,
+            "docstatus": 0,
+            "invoice_printed": 0,
+        },
+        "name",
+        order_by="creation desc",
+    )
+    if not target_invoice_name:
+        frappe.throw(_("No active order found on target table {0}.").format(targetTable))
+
+    target_invoice = frappe.get_doc("POS Invoice", target_invoice_name)
+
+    for item in source_invoice.items:
+        target_invoice.append(
+            "items",
+            {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "qty": item.qty,
+                "rate": item.rate,
+                "amount": item.amount,
+                "description": item.description or "",
+            },
+        )
+
+    target_invoice.calculate_taxes_and_totals()
+    target_invoice.save()
+
+    cancel_order(invoice, _("Merged into table {0}").format(targetTable))
+
+    return {"status": "success", "target_invoice": target_invoice.name, "target_table": targetTable}
+
+
+@frappe.whitelist()
 def captain_transfer(currentCaptain, newCaptain, invoice):
     pos_profile=frappe.get_value("POS Invoice", invoice,"pos_profile")
     multiple_cashier = frappe.db.get_value("POS Profile",pos_profile,"custom_enable_multiple_cashier")
@@ -584,7 +645,20 @@ def cancel_order(invoice_id, reason):
 
 # Method for URY POS
 @frappe.whitelist()
-def make_invoice(customer, payments, cashier, pos_profile,owner, additionalDiscount=None, table=None, invoice=None):
+def make_invoice(
+    customer,
+    payments,
+    cashier,
+    pos_profile,
+    owner,
+    additionalDiscount=None,
+    additional_discount_amount=None,
+    coupon_code=None,
+    table=None,
+    invoice=None,
+    tip_amount=None,
+    email_invoice=None,
+):
     if isinstance(payments, str):
         payments = json.loads(payments)
 
@@ -603,7 +677,31 @@ def make_invoice(customer, payments, cashier, pos_profile,owner, additionalDisco
 
     invoice.customer = customer
     invoice.pos_profile = pos_profile
-    invoice.additional_discount_percentage = additionalDiscount or 0
+
+    from ury.ury.api.ury_pos_payment import apply_payment_adjustments
+
+    apply_payment_adjustments(
+        invoice,
+        additional_discount_percentage=additionalDiscount,
+        additional_discount_amount=additional_discount_amount,
+        coupon_code=coupon_code,
+    )
+
+    tip_value = float(tip_amount or 0)
+    if tip_value > 0:
+        tip_item = frappe.db.get_value("POS Profile", pos_profile, "custom_tip_item")
+        if tip_item:
+            invoice.append(
+                "items",
+                {
+                    "item_code": tip_item,
+                    "item_name": frappe.db.get_value("Item", tip_item, "item_name") or tip_item,
+                    "qty": 1,
+                    "rate": tip_value,
+                    "amount": tip_value,
+                },
+            )
+
     invoice.calculate_taxes_and_totals()
 
     invoice.set("payments", [])
@@ -612,6 +710,9 @@ def make_invoice(customer, payments, cashier, pos_profile,owner, additionalDisco
         invoice.append(
             "payments", dict(mode_of_payment=d["mode_of_payment"], amount=d["amount"])
         )
+
+    if cint(email_invoice):
+        invoice.flags.send_email = 1
 
     # invoice.owner = owner
     invoice.save()

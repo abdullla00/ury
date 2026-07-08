@@ -7,6 +7,7 @@ import { ChevronDown } from 'lucide-react';
 import React from 'react';
 import { addCustomer, type CreateCustomerData, searchCustomers } from '../lib/customer-api';
 import { AggregatorSelect } from './AggregatorSelect';
+import { isDefaultCustomerForType } from '../data/order-types';
 import { t } from '../i18n';
 
 // NewCustomerForm component
@@ -220,9 +221,15 @@ function NewCustomerForm({
 
 interface CustomerSelectProps {
   disabled?: boolean;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export function CustomerSelect({ disabled }: CustomerSelectProps) {
+export function CustomerSelect({
+  disabled,
+  expanded = false,
+  onExpandedChange,
+}: CustomerSelectProps) {
   const { selectedCustomer, setSelectedCustomer, selectedOrderType, isUpdatingOrder } = usePOSStore();
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
@@ -260,6 +267,18 @@ export function CustomerSelect({ disabled }: CustomerSelectProps) {
     return () => clearTimeout(handler);
   }, [searchTerm, isOpen]);
 
+  useEffect(() => {
+    if (expanded) {
+      inputRef.current?.focus();
+    }
+  }, [expanded]);
+
+  const isDefaultCustomer = isDefaultCustomerForType(
+    selectedCustomer?.name,
+    selectedOrderType,
+  );
+  const hasRealCustomer = Boolean(selectedCustomer?.name) && !isDefaultCustomer;
+
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
@@ -288,10 +307,14 @@ export function CustomerSelect({ disabled }: CustomerSelectProps) {
           });
           setSearchTerm('');
           setIsOpen(false);
+          onExpandedChange?.(false);
         }
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
+      if (expanded && isDefaultCustomer) {
+        onExpandedChange?.(false);
+      }
     }
   };
 
@@ -299,26 +322,57 @@ export function CustomerSelect({ disabled }: CustomerSelectProps) {
     return <AggregatorSelect />;
   }
 
+  if (isDefaultCustomer && !expanded) {
+    return null;
+  }
+
+  if (hasRealCustomer && !expanded) {
+    return (
+      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-gray-900">{selectedCustomer?.name}</p>
+          {selectedCustomer?.phone && (
+            <p className="truncate text-xs text-gray-500">{selectedCustomer.phone}</p>
+          )}
+        </div>
+        <Button
+          onClick={() => onExpandedChange?.(true)}
+          disabled={isUpdatingOrder || disabled}
+          variant="ghost"
+          size="sm"
+          className="shrink-0 text-primary-700"
+        >
+          {t('customer.change_customer')}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
-      {selectedCustomer ? (
-        <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
-          <div>
-            <p className="font-medium text-blue-900">{selectedCustomer.name}</p>
-            <p className="text-sm text-blue-700">{selectedCustomer.phone}</p>
+      {selectedCustomer && hasRealCustomer ? (
+        <div className="mb-2 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-gray-900">{selectedCustomer.name}</p>
+            {selectedCustomer.phone && (
+              <p className="truncate text-xs text-gray-500">{selectedCustomer.phone}</p>
+            )}
           </div>
           <Button
-            onClick={() => setSelectedCustomer(null)}
-            disabled={isUpdatingOrder}
+            onClick={() => {
+              setSelectedCustomer(null);
+              onExpandedChange?.(true);
+            }}
+            disabled={isUpdatingOrder || disabled}
             variant="ghost"
             size="sm"
-            className="text-blue-700 hover:text-blue-800"
+            className="shrink-0 text-primary-700"
           >
-            {t('common.change')}
+            {t('customer.change_customer')}
           </Button>
         </div>
-      ) : (
-        <div className="relative">
+      ) : null}
+      <div className="relative">
           <div className="flex items-center relative">
             <input
               ref={inputRef}
@@ -368,6 +422,7 @@ export function CustomerSelect({ disabled }: CustomerSelectProps) {
                       setSelectedCustomer({ id: customer.name, name, phone });
                       setSearchTerm('');
                       setIsOpen(false);
+                      onExpandedChange?.(false);
                     }}
                     onMouseEnter={() => setHighlightedIndex(idx)}
                   >
@@ -403,8 +458,7 @@ export function CustomerSelect({ disabled }: CustomerSelectProps) {
               </button>
             </div>
           )}
-        </div>
-      )}
+      </div>
       {showNewCustomerForm && (
         <Dialog 
           open={showNewCustomerForm} 

@@ -1,8 +1,33 @@
 import { StateCreator } from 'zustand';
 import { OrderType } from '../../data/order-types';
 import { call } from '../../lib/frappe-sdk';
-import { getPOSInvoices, getPOSInvoiceItems, POSInvoiceItem, POSInvoiceTax } from '../../lib/invoice-api';
-import { searchPosInvoice } from '../../lib/invoice-api';
+import {
+  getPOSInvoices,
+  getPOSInvoiceItems,
+  POSInvoiceItem,
+  POSInvoiceTax,
+  getOrderStatusCounts,
+  getKotFilterCounts,
+  KotFilterCounts,
+  searchPosInvoice,
+} from '../../lib/invoice-api';
+import { readKotFilter } from '../../lib/kot-order-utils';
+
+export type KotSummaryStatus =
+  | 'not_sent'
+  | 'in_kitchen'
+  | 'ready'
+  | 'served'
+  | 'cancel_pending'
+  | 'partial';
+
+export interface KotStationStatus {
+  production: string;
+  status: KotSummaryStatus;
+  type?: string;
+}
+
+export type KotFilterChip = 'all' | 'in_kitchen' | 'delayed' | 'not_sent';
 
 export interface POSInvoice {
   name: string;
@@ -20,6 +45,13 @@ export interface POSInvoice {
   posting_date: string;
   rounded_total: number;
   order_type: OrderType;
+  custom_comments?: string | null;
+  custom_allergy_note?: string | null;
+  item_count?: number;
+  kot_summary?: KotSummaryStatus;
+  kot_stations?: KotStationStatus[];
+  kot_modified?: boolean;
+  kot_delayed?: boolean;
 }
 
 export interface OrdersState {
@@ -38,10 +70,17 @@ export interface OrdersState {
   selectedOrderLoading: boolean;
   selectedOrderError: string | null;
   orderSearchQuery: string;
+  statusCounts: Record<string, number>;
+  statusCountsFetchedAt: number | null;
+  kotFilterCounts: KotFilterCounts;
+  kotFilterCountsFetchedAt: number | null;
+  kotFilter: KotFilterChip;
 }
 
 export interface OrdersActions {
   fetchOrders: (page?: number) => Promise<void>;
+  fetchStatusCounts: (force?: boolean) => Promise<void>;
+  fetchKotFilterCounts: (force?: boolean) => Promise<void>;
   updateOrderStatus: (orderId: string, status: POSInvoice['status']) => Promise<void>;
   goToNextPage: () => Promise<void>;
   goToPreviousPage: () => Promise<void>;
@@ -49,11 +88,16 @@ export interface OrdersActions {
   selectOrder: (order: POSInvoice) => Promise<void>;
   clearSelectedOrder: () => void;
   setOrderSearchQuery: (query: string) => void;
+  setKotFilter: (filter: KotFilterChip) => Promise<void>;
 }
 
 export type OrdersSlice = OrdersState & OrdersActions;
 
 const ITEMS_PER_PAGE = 10;
+const STATUS_COUNTS_TTL_MS = 30_000;
+
+const isKitchenTab = (status: OrdersState['selectedStatus']) =>
+  status === 'Draft' || status === 'Unbilled';
 
 export const createOrdersSlice: StateCreator<
   OrdersSlice,
@@ -61,7 +105,6 @@ export const createOrdersSlice: StateCreator<
   [],
   OrdersSlice
 > = (set, get) => ({
-  // Initial state
   orders: [],
   orderLoading: false,
   error: null,
@@ -77,21 +120,64 @@ export const createOrdersSlice: StateCreator<
   selectedOrderLoading: false,
   selectedOrderError: null,
   orderSearchQuery: '',
+  statusCounts: {},
+  statusCountsFetchedAt: null,
+  kotFilterCounts: { in_kitchen: 0, delayed: 0, not_sent: 0 },
+  kotFilterCountsFetchedAt: null,
+  kotFilter: 'all',
 
-  // Actions
+  fetchStatusCounts: async (force = false) => {
+    const now = Date.now();
+    const { statusCountsFetchedAt } = get();
+    if (!force && statusCountsFetchedAt && now - statusCountsFetchedAt < STATUS_COUNTS_TTL_MS) {
+      return;
+    }
+    try {
+      const counts = await getOrderStatusCounts();
+      set({ statusCounts: counts, statusCountsFetchedAt: now });
+    } catch {
+      // non-blocking
+    }
+  },
+
+  fetchKotFilterCounts: async (force = false) => {
+    const { selectedStatus } = get();
+    if (!isKitchenTab(selectedStatus)) {
+      set({ kotFilterCounts: { in_kitchen: 0, delayed: 0, not_sent: 0 } });
+      return;
+    }
+    const now = Date.now();
+    const { kotFilterCountsFetchedAt } = get();
+    if (!force && kotFilterCountsFetchedAt && now - kotFilterCountsFetchedAt < STATUS_COUNTS_TTL_MS) {
+      return;
+    }
+    try {
+      const counts = await getKotFilterCounts(selectedStatus);
+      set({ kotFilterCounts: counts, kotFilterCountsFetchedAt: now });
+    } catch {
+      // non-blocking
+    }
+  },
+
   fetchOrders: async (page = 1) => {
     try {
       set({ orderLoading: true, error: null });
-      const { orderSearchQuery, selectedStatus } = get();
-      
-      // Get POS profile to access paid_limit
+      const { orderSearchQuery, selectedStatus, kotFilter } = get();
+      void get().fetchStatusCounts();
+      if (isKitchenTab(selectedStatus)) {
+        void get().fetchKotFilterCounts();
+      }
+
       const posProfile = sessionStorage.getItem('posProfile');
       const profile = posProfile ? JSON.parse(posProfile) : null;
       const paidLimit = profile?.paid_limit;
-      
+
       if (orderSearchQuery && orderSearchQuery.trim()) {
-        // Use search API
-        const res = await searchPosInvoice(orderSearchQuery, selectedStatus);
+        const res = await searchPosInvoice(
+          orderSearchQuery,
+          selectedStatus,
+          isKitchenTab(selectedStatus) ? kotFilter : undefined,
+        );
         set({
           orders: res.data || [],
           pagination: {
@@ -99,32 +185,32 @@ export const createOrdersSlice: StateCreator<
             hasNextPage: false,
             itemsPerPage: ITEMS_PER_PAGE,
           },
-          orderLoading: false
+          orderLoading: false,
         });
         return;
       }
-      // Default fetch
+
       const limitStart = (page - 1) * ITEMS_PER_PAGE;
-      const status = selectedStatus;
       const { invoices, hasMore } = await getPOSInvoices({
-        status,
+        status: selectedStatus,
         limit: ITEMS_PER_PAGE,
         limit_start: limitStart,
-        paid_limit: paidLimit
+        paid_limit: paidLimit,
+        kot_filter: isKitchenTab(selectedStatus) ? kotFilter : undefined,
       });
-      set({ 
+      set({
         orders: invoices,
         pagination: {
           currentPage: page,
           hasNextPage: hasMore,
           itemsPerPage: ITEMS_PER_PAGE,
         },
-        orderLoading: false 
+        orderLoading: false,
       });
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to fetch orders',
-        orderLoading: false 
+        orderLoading: false,
       });
     }
   },
@@ -144,41 +230,42 @@ export const createOrdersSlice: StateCreator<
   },
 
   setSelectedStatus: async (status) => {
-    set({ selectedStatus: status });
-    // Clear selected order when status changes
+    set({ selectedStatus: status, kotFilter: readKotFilter(status) });
     get().clearSelectedOrder();
-    await get().fetchOrders(1); // Reset to first page when status changes
+    await get().fetchStatusCounts(true);
+    await get().fetchKotFilterCounts(true);
+    await get().fetchOrders(1);
   },
 
   selectOrder: async (order) => {
     try {
-      set({ 
+      set({
         selectedOrder: order,
-        selectedOrderLoading: true, 
-        selectedOrderError: null 
+        selectedOrderLoading: true,
+        selectedOrderError: null,
       });
 
       const { items, taxes } = await getPOSInvoiceItems(order.name);
-      
-      set({ 
+
+      set({
         selectedOrderItems: items,
         selectedOrderTaxes: taxes,
-        selectedOrderLoading: false 
+        selectedOrderLoading: false,
       });
     } catch (error) {
-      set({ 
+      set({
         selectedOrderError: error instanceof Error ? error.message : 'Failed to fetch order details',
-        selectedOrderLoading: false 
+        selectedOrderLoading: false,
       });
     }
   },
 
   clearSelectedOrder: () => {
-    set({ 
+    set({
       selectedOrder: null,
       selectedOrderItems: [],
       selectedOrderTaxes: [],
-      selectedOrderError: null 
+      selectedOrderError: null,
     });
   },
 
@@ -191,17 +278,24 @@ export const createOrdersSlice: StateCreator<
         status,
       });
 
-      // Refresh the orders list after status update
+      await get().fetchStatusCounts(true);
+      await get().fetchKotFilterCounts(true);
       await get().fetchOrders(get().pagination.currentPage);
-      
+
       set({ orderLoading: false });
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to update order status',
-        orderLoading: false 
+        orderLoading: false,
       });
     }
   },
 
   setOrderSearchQuery: (query) => set({ orderSearchQuery: query }),
-}); 
+
+  setKotFilter: async (filter) => {
+    set({ kotFilter: filter });
+    get().clearSelectedOrder();
+    await get().fetchOrders(1);
+  },
+});

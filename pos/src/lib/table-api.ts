@@ -17,6 +17,7 @@ export interface Table {
   layout_x?: number;
   layout_y?: number;
   minimum_seating?: number;
+  custom_guest_order_at?: string | null;
 }
 
 
@@ -66,7 +67,8 @@ export async function getTables(room: string): Promise<Table[]> {
       'no_of_seats',
       'layout_x',
       'layout_y',
-      'minimum_seating'
+      'minimum_seating',
+      'custom_guest_order_at',
     ],
     filters: [['restaurant_room', '=', room]],
     asDict: true,

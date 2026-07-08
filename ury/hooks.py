@@ -50,7 +50,10 @@ app_include_js = [
 page_js = {"point-of-sale": ["public/js/pos_extend.js"]}
 
 # include js in doctype views
-# doctype_js = {"POS Invoive" : "public/js/pos_print.js"}
+doctype_js = {
+    "POS Opening Entry": "public/js/pos_opening_entry_ury_return.js",
+    "POS Closing Entry": "public/js/pos_opening_entry_ury_return.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -362,6 +365,11 @@ fixtures = [
                     "URY Menu Course-custom_serving_priority",
                     "URY Menu Course-custom_indicate_in_kds",
                     "POS Profile-custom_enable_kot_reprint",
+                    "POS Profile-custom_orders_kot_opens_kds",
+                    "POS Profile-custom_enable_tips",
+                    "POS Profile-custom_tip_item",
+                    "POS Profile-custom_default_pos_screen",
+                    "URY Table-custom_guest_order_at",
                     "POS Profile-custom_parcel_order_printer",
                     "POS Profile-custom_column_break_wwq3q",
                     "POS Profile-custom_table_order_printer",

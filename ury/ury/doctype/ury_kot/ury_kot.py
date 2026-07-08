@@ -112,3 +112,8 @@ class URYKOT(Document):
     def userSetting(self):
         userDoc = frappe.get_doc("User", self.owner)
         self.user = userDoc.full_name
+
+
+def publish_kot_realtime_for_name(name):
+    kot = frappe.get_doc("URY KOT", name)
+    kot.kotDisplayRealtime()

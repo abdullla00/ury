@@ -16,6 +16,7 @@ const OrderStatusSidebar = ({
   disabled,
   selectedStatus,
   setSelectedStatus,
+  getStatusCount,
 }: OrderStatusSidebarProps) => {
   const { posProfile } = usePOSStore();
   const statusTypes = getOrderStatusTypes(posProfile?.view_all_status, posProfile?.paid_limit);
@@ -55,6 +56,11 @@ const OrderStatusSidebar = ({
             >
               <FileText className="h-4 w-4" />
               <span>{t(`order_status_types.${status.value.toLowerCase().replace(/ /g, '_')}`)}</span>
+              {getStatusCount && getStatusCount(status.value as OrderStatusType) > 0 ? (
+                <span className="text-xs opacity-80">
+                  ({getStatusCount(status.value as OrderStatusType)})
+                </span>
+              ) : null}
             </Button>
           ))}
         </div>
@@ -86,6 +92,11 @@ const OrderStatusSidebar = ({
                   <div className="ms-1 flex items-center gap-3">
                     <FileText className="h-4 w-4 text-gray-500" />
                     <span>{t(`order_status_types.${status.value.toLowerCase().replace(/ /g, '_')}`)}</span>
+                    {getStatusCount && getStatusCount(status.value as OrderStatusType) > 0 ? (
+                      <span className="text-xs text-gray-500">
+                        ({getStatusCount(status.value as OrderStatusType)})
+                      </span>
+                    ) : null}
                   </div>
                 </Button>
               ))}

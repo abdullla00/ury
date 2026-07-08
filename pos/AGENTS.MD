@@ -63,7 +63,9 @@ pos/
 │   │   ├── AggregatorSelect.tsx# Aggregator platform selector
 │   │   ├── TableSelectionDialog.tsx # Table picker for dine-in
 │   │   ├── CommentDialog.tsx # Order-level comment editor
-│   │   ├── POSOpeningDialog.tsx # POS not opened / not closed error screen
+│   │   ├── POSShiftGate.tsx     # Full-screen shift gate (opening / close / draft)
+│   │   ├── POSShiftWelcome.tsx  # Post-open welcome (once per session)
+│   │   ├── POSShiftGateLoading.tsx
 │   │   ├── POSOpeningProvider.tsx  # Checks POS opening entry on mount
 │   │   ├── OrderStatusSidebar.tsx  # Status filter tabs (Draft, Paid…)
 │   │   ├── AuthGuard.tsx     # Redirects unauthenticated users

@@ -77,6 +77,7 @@ export interface SyncOrderRequest {
   order_type: string;
   last_invoice: string | null;
   comments?: string | null;
+  allergy_note?: string | null;
   room?: string;
 }
 
@@ -87,6 +88,7 @@ export const syncOrder = async (data: SyncOrderRequest) => {
     invoice: data.invoice ?? '',
     table: data.table ?? '',
     comments: data.comments ?? '',
+    allergy_note: data.allergy_note ?? '',
     room: data.room ?? '',
     aggregator_id: data.aggregator_id ?? '',
   };

@@ -21,6 +21,16 @@ export interface PosProfileLimited {
   multiple_cashier: number;
   owner: string;
   edit_order_type?: number;
+  enable_kot_reprint?: number;
+  allow_partial_payment?: number;
+  enable_tips?: number;
+  tip_item?: string | null;
+  kds_production_unit?: string | null;
+  kot_warning_time?: number;
+  default_pos_screen?: string;
+  transfer_roles?: string[];
+  view_all_status?: number;
+  orders_kot_opens_kds?: number;
 }
 
 export interface PosProfileLimitedResponse {
@@ -84,6 +94,15 @@ export interface PosProfileCombined extends PosProfileFull {
   edit_order_type?: number;
   view_all_status?: number;
   custom_daily_pos_close?: number;
+  enable_kot_reprint?: number;
+  allow_partial_payment?: number;
+  enable_tips?: number;
+  tip_item?: string | null;
+  kds_production_unit?: string | null;
+  kot_warning_time?: number;
+  default_pos_screen?: string;
+  transfer_roles?: string[];
+  orders_kot_opens_kds?: number;
 }
 
 export interface Currency {
@@ -134,6 +153,16 @@ export async function getCombinedPosProfile(): Promise<PosProfileCombined> {
     enable_discount: limitedProfile.enable_discount,
     multiple_cashier: limitedProfile.multiple_cashier,
     edit_order_type: limitedProfile.edit_order_type,
+    enable_kot_reprint: limitedProfile.enable_kot_reprint,
+    allow_partial_payment: limitedProfile.allow_partial_payment,
+    enable_tips: limitedProfile.enable_tips,
+    tip_item: limitedProfile.tip_item,
+    kds_production_unit: limitedProfile.kds_production_unit,
+    kot_warning_time: limitedProfile.kot_warning_time,
+    default_pos_screen: limitedProfile.default_pos_screen,
+    transfer_roles: limitedProfile.transfer_roles,
+    view_all_status: limitedProfile.view_all_status,
+    orders_kot_opens_kds: limitedProfile.orders_kot_opens_kds ?? 1,
   };
 
   return combinedProfile;

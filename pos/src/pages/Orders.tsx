@@ -1,12 +1,25 @@
-import React, { useEffect, useRef } from 'react';
-import { Clock, User, UserCheck, Receipt, Printer, Pencil, X } from 'lucide-react';
-import { Badge, Button, Card, CardContent } from '../components/ui';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Clock, User, UserCheck, Receipt, Printer, Pencil, X, ExternalLink } from 'lucide-react';
+import { Badge, Button } from '../components/ui';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog';
 import { showToast } from '../components/ui/toast';
 import OrderStatusSidebar from '../components/OrderStatusSidebar';
+import OrderListCard from '../components/OrderListCard';
+import OrdersKotFilterChips from '../components/OrdersKotFilterChips';
+import OrdersKitchenSummary from '../components/OrdersKitchenSummary';
+import OrderCardQuickMenu from '../components/OrderCardQuickMenu';
 import { useRootStore } from '../store/root-store';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, cn } from '../lib/utils';
 import { Spinner } from '../components/ui/spinner';
+import {
+  canModifyOrder,
+  getDisplayBillingStatus,
+  getKitchenRowsForOrder,
+  getKotStatusClass,
+  mosaicUrlForStation,
+} from '../lib/order-card-accent';
+import KotStatusIndicator from '../components/KotStatusIndicator';
+import { writeKotFilter } from '../lib/kot-order-utils';
 import { Textarea } from '../components/ui/textarea';
 import { usePOSStore } from '../store/pos-store';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +37,7 @@ interface OrderDetailContentProps {
   selectedOrderError: string | null;
   selectedOrderItems: POSInvoiceItem[];
   selectedOrderTaxes: POSInvoiceTax[];
+  selectedStatus: string;
   getBadgeVariant: (status: string) => 'default' | 'secondary' | 'destructive';
   formatDateTime: (date: string, time: string) => string;
   handleEditOrder: () => void;
@@ -32,6 +46,7 @@ interface OrderDetailContentProps {
   handlePrintOrder: () => void;
   isPrinting: boolean;
   setShowPaymentDialog: (open: boolean) => void;
+  ordersKotOpensKds: boolean;
 }
 
 function OrderDetailContent({
@@ -48,6 +63,8 @@ function OrderDetailContent({
   handlePrintOrder,
   isPrinting,
   setShowPaymentDialog,
+  selectedStatus,
+  ordersKotOpensKds,
 }: OrderDetailContentProps) {
   if (selectedOrderLoading) {
     return (
@@ -66,10 +83,9 @@ function OrderDetailContent({
     );
   }
 
-  const canModify =
-    selectedOrder.status === 'Draft' ||
-    selectedOrder.status === 'Unbilled' ||
-    selectedOrder.status === 'Recently Paid';
+  const displayStatus = getDisplayBillingStatus(selectedOrder, selectedStatus);
+  const canModify = canModifyOrder(displayStatus);
+  const kotRows = getKitchenRowsForOrder(selectedOrder, displayStatus);
 
   return (
     <>
@@ -100,13 +116,68 @@ function OrderDetailContent({
               </button>
             </>
           )}
-          <Badge variant={getBadgeVariant(selectedOrder.status)}>
-            {t(`order_status_types.${selectedOrder.status.toLowerCase().replace(/ /g, '_')}`)}
+          <Badge variant={getBadgeVariant(displayStatus)}>
+            {t(`order_status_types.${displayStatus.toLowerCase().replace(/ /g, '_')}`)}
           </Badge>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {selectedOrder.custom_allergy_note ? (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            <strong>{t('orders.allergy_note')}:</strong> {selectedOrder.custom_allergy_note}
+          </div>
+        ) : null}
+        {selectedOrder.custom_comments ? (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <strong>{t('orders.order_note')}:</strong> {selectedOrder.custom_comments}
+          </div>
+        ) : null}
+
+        {kotRows.length > 0 ? (
+          <div className="mb-6">
+            <h3 className="mb-2 text-base font-semibold text-gray-900">{t('orders.kitchen_status')}</h3>
+            <div className="space-y-2">
+              {kotRows.map((station, index) => {
+                const statusLabel = t(`kot_status.${station.status}`);
+                const label = station.production
+                  ? `${station.production} · ${statusLabel}`
+                  : statusLabel;
+                return (
+                  <div
+                    key={station.production || `kot-${index}`}
+                    className="flex flex-col gap-2 rounded-lg border border-gray-100 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <KotStatusIndicator
+                        status={station.status}
+                        delayed={selectedOrder.kot_delayed}
+                        iconClassName="h-4 w-4"
+                      />
+                      <span className={getKotStatusClass(station.status, selectedOrder.kot_delayed)}>
+                        {label}
+                      </span>
+                    </div>
+                    {ordersKotOpensKds && station.production ? (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        className="w-full sm:w-auto"
+                        onClick={() =>
+                          window.open(mosaicUrlForStation(station.production), '_blank', 'noopener,noreferrer')
+                        }
+                      >
+                        <ExternalLink className="me-1.5 h-4 w-4" />
+                        {t('orders.open_kds_station', { station: station.production })}
+                      </Button>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         <div className="mb-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-3">
@@ -202,7 +273,7 @@ function OrderDetailContent({
 }
 
 export default function Orders() {
-  const { 
+  const {
     orders,
     orderLoading,
     error,
@@ -214,12 +285,19 @@ export default function Orders() {
     selectedOrderLoading,
     selectedOrderError,
     fetchOrders,
+    fetchStatusCounts,
+    fetchKotFilterCounts,
     setSelectedStatus,
     goToNextPage,
     goToPreviousPage,
     selectOrder,
     clearSelectedOrder,
-    orderSearchQuery
+    orderSearchQuery,
+    statusCounts,
+    kotFilterCounts,
+    kotFilter,
+    setKotFilter,
+    setOrderSearchQuery,
   } = useRootStore();
 
   const posStore = usePOSStore();
@@ -231,19 +309,84 @@ export default function Orders() {
   const [editLoading, setEditLoading] = React.useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = React.useState(false);
   const [isPrinting, setIsPrinting] = React.useState(false);
+  const [quickMenu, setQuickMenu] = React.useState<{
+    order: POSInvoice;
+    anchor: { x: number; y: number };
+  } | null>(null);
+
+  const ordersKotOpensKds = posStore.posProfile?.orders_kot_opens_kds !== 0;
+  const enableKotReprint = posStore.posProfile?.enable_kot_reprint === 1;
+  const showKotFilters = selectedStatus === 'Draft' || selectedStatus === 'Unbilled';
 
   useEffect(() => {
     fetchOrders();
-  }, [fetchOrders]);
+    void fetchStatusCounts();
+    void fetchKotFilterCounts();
+  }, [fetchOrders, fetchStatusCounts, fetchKotFilterCounts]);
 
   useEffect(() => {
     if (!mounted.current) {
       mounted.current = true;
-      return; // Skip the first run
+      return;
     }
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderSearchQuery]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void fetchOrders(pagination.currentPage);
+      void fetchStatusCounts(true);
+      void fetchKotFilterCounts(true);
+    }, 30_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchOrders(pagination.currentPage);
+        void fetchStatusCounts(true);
+        void fetchKotFilterCounts(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [fetchOrders, fetchStatusCounts, fetchKotFilterCounts, pagination.currentPage]);
+
+  const kotTally = useMemo(
+    () => ({
+      inKitchen: kotFilterCounts.in_kitchen,
+      delayed: kotFilterCounts.delayed,
+      notSent: kotFilterCounts.not_sent,
+    }),
+    [kotFilterCounts],
+  );
+
+  const getStatusCount = (status: string) => statusCounts[status] ?? 0;
+
+  const emptyMessageKey = useMemo(() => {
+    if (orderSearchQuery.trim()) {
+      return null;
+    }
+    const map: Record<string, string> = {
+      Draft: 'orders.empty_draft',
+      Unbilled: 'orders.empty_unbilled',
+      Paid: 'orders.empty_paid',
+      Consolidated: 'orders.empty_consolidated',
+      Return: 'orders.empty_return',
+      'Recently Paid': 'orders.empty_recently_paid',
+    };
+    return map[selectedStatus] ?? 'orders.no_orders_found';
+  }, [orderSearchQuery, selectedStatus]);
+
+  const handleKotFilterChange = (filter: typeof kotFilter) => {
+    writeKotFilter(selectedStatus, filter);
+    void setKotFilter(filter);
+  };
+
+  const handleClearSearch = () => {
+    setOrderSearchQuery('');
+  };
 
 
   // Function to format the date and time
@@ -391,65 +534,62 @@ export default function Orders() {
       <OrderStatusSidebar
         selectedStatus={selectedStatus}
         setSelectedStatus={setSelectedStatus}
+        getStatusCount={getStatusCount}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:pe-96">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:pe-[var(--cart-width)]">
         <div className="flex-1 overflow-y-auto bg-gray-50 p-3 pb-6 sm:p-4 lg:pb-40">
+          {showKotFilters && !orderLoading && orders.length > 0 ? (
+            <div className="mx-auto mb-3 max-w-screen-xl">
+              <OrdersKitchenSummary counts={kotTally} onFilter={handleKotFilterChange} />
+              <OrdersKotFilterChips
+                active={kotFilter}
+                counts={kotTally}
+                onChange={handleKotFilterChange}
+              />
+            </div>
+          ) : null}
+
           {orderLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Spinner />
+            <div className="mx-auto grid max-w-screen-xl grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-36 animate-pulse rounded-xl border border-gray-200 bg-white"
+                />
+              ))}
             </div>
           ) : orders.length === 0 ? (
-            <div className="text-center mt-10">
-              <p className="text-gray-500">{t('orders.no_orders_found')}</p>
+            <div className="mt-10 text-center">
+              <p className="text-gray-500">
+                {orderSearchQuery.trim()
+                  ? t('orders.no_match', { query: orderSearchQuery })
+                  : t(emptyMessageKey ?? 'orders.no_orders_found')}
+              </p>
+              {orderSearchQuery.trim() ? (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="mt-3 rounded-full"
+                  onClick={handleClearSearch}
+                >
+                  {t('orders.clear_search')}
+                </Button>
+              ) : null}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-screen-xl mx-auto">
+            <div className="mx-auto grid max-w-screen-xl grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-4">
               {orders.map((order) => (
-                <Card 
-                  key={order.name} 
-                  className={`p-0 bg-white hover:shadow-md transition-shadow flex flex-col overflow-hidden cursor-pointer ${
-                    selectedOrder?.name === order.name ? 'ring-2 ring-blue-500 shadow-lg' : ''
-                  }`}
-                  onClick={() => handleOrderClick(order)}
-                >
-                  <CardContent className="p-0 flex flex-col h-full">
-                    <div className="p-3 bg-gray-50 border-b">
-                    <h3 className="font-medium text-gray-900 text-sm truncate" title={order.name}>
-                      {order.name}
-                    </h3>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-gray-500">
-                          {order.restaurant_table ? `Table ${order.restaurant_table} • ` : ''}{t(`order_types.${order.order_type.toLowerCase().replace(/ /g, '_')}`)}
-                        </p>
-                      </div>
-                      <Badge variant={getBadgeVariant(order.status)} className="ms-2">
-                        {t(`order_status_types.${order.status.toLowerCase().replace(/ /g, '_')}`)}
-                      </Badge>
-                    </div>
-                    </div>
-
-                    {/* Content section - matches MenuCard padding and structure */}
-                    <div className="flex-1 p-3 flex flex-col">
-                      <div className="">
-                        <p className="text-sm text-gray-900">{order.customer}</p>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{formatDateTime(order.posting_date, order.posting_time)}</span>
-                      </div>
-
-                      {/* Total - pushed to bottom like MenuCard */}
-                      <div className="mt-auto pt-2">
-                        <span className="text-sm font-semibold text-gray-900 tabular-nums">
-                          {formatCurrency(order.rounded_total)}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <OrderListCard
+                  key={order.name}
+                  order={order}
+                  selectedStatus={selectedStatus}
+                  isSelected={selectedOrder?.name === order.name}
+                  ordersKotOpensKds={ordersKotOpensKds}
+                  onSelect={handleOrderClick}
+                  onLongPress={(o, anchor) => setQuickMenu({ order: o, anchor })}
+                  getBadgeVariant={getBadgeVariant}
+                />
               ))}
             </div>
           )}
@@ -487,7 +627,7 @@ export default function Orders() {
       </div>
 
       {/* Desktop order details */}
-      <div className="fixed end-0 top-14 z-10 hidden h-[calc(100vh-3.5rem)] w-80 flex-col border-s border-gray-200 bg-white lg:top-16 lg:flex lg:h-[calc(100vh-4rem)] lg:w-96">
+      <div className="fixed end-0 top-14 z-10 hidden h-[calc(100vh-3.5rem)] w-80 flex-col border-s border-gray-200 bg-gray-50 lg:top-16 lg:flex lg:h-[calc(100vh-4rem)] lg:w-[var(--cart-width)]">
         {!selectedOrder ? (
           <div className="flex h-full flex-col items-center justify-center p-6 text-center text-gray-500">
             <p className="mb-2 text-lg font-medium">{t('order.select_to_view')}</p>
@@ -500,6 +640,8 @@ export default function Orders() {
             selectedOrderError={selectedOrderError}
             selectedOrderItems={selectedOrderItems}
             selectedOrderTaxes={selectedOrderTaxes}
+            selectedStatus={selectedStatus}
+            ordersKotOpensKds={ordersKotOpensKds}
             getBadgeVariant={getBadgeVariant}
             formatDateTime={formatDateTime}
             handleEditOrder={handleEditOrder}
@@ -524,6 +666,8 @@ export default function Orders() {
             selectedOrderError={selectedOrderError}
             selectedOrderItems={selectedOrderItems}
             selectedOrderTaxes={selectedOrderTaxes}
+            selectedStatus={selectedStatus}
+            ordersKotOpensKds={ordersKotOpensKds}
             getBadgeVariant={getBadgeVariant}
             formatDateTime={formatDateTime}
             handleEditOrder={handleEditOrder}
@@ -578,6 +722,16 @@ export default function Orders() {
           clearSelectedOrder={clearSelectedOrder}
         />
       )}
+
+      {quickMenu ? (
+        <OrderCardQuickMenu
+          order={quickMenu.order}
+          anchor={quickMenu.anchor}
+          ordersKotOpensKds={ordersKotOpensKds}
+          enableKotReprint={enableKotReprint}
+          onClose={() => setQuickMenu(null)}
+        />
+      ) : null}
     </div>
   );
 };

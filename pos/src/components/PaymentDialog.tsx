@@ -1,12 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { X, Percent, Coins } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Banknote,
+  CreditCard,
+  Gift,
+  Mail,
+  Percent,
+  Sparkles,
+  Ticket,
+  Wallet,
+  X,
+} from 'lucide-react';
 import { usePOSStore } from '../store/pos-store';
 import { cn, formatCurrency } from '../lib/utils';
 import { Button, Input, Dialog, DialogContent } from './ui';
+import PaymentNumpad from './PaymentNumpad';
 import { call } from '../lib/frappe-sdk';
 import { DEFAULT_PAYMENT_MODE } from '../data/order-types';
 import { t } from '../i18n';
-
+import { previewPaymentTotals, validatePosCoupon } from '../lib/payment-api';
+import {
+  buildPaymentsList,
+  type DiscountType,
+  type PaymentPreview,
+  paymentsTotal,
+} from '../lib/payment-calculations';
 
 interface PaymentDialogProps {
   onClose: () => void;
@@ -20,6 +37,28 @@ interface PaymentDialogProps {
   owner: string;
   fetchOrders: () => Promise<void>;
   clearSelectedOrder: () => void;
+  fullscreen?: boolean;
+}
+
+type AdjustTab = 'discount' | 'voucher' | 'tip';
+
+const DISCOUNT_PRESETS = [5, 10, 15, 20];
+
+function modeIcon(mode: string) {
+  const lower = mode.toLowerCase();
+  if (lower.includes('cash')) {
+    return Banknote;
+  }
+  if (lower.includes('voucher') || lower.includes('coupon') || lower.includes('gift')) {
+    return Ticket;
+  }
+  if (lower.includes('card') || lower.includes('credit') || lower.includes('debit')) {
+    return CreditCard;
+  }
+  if (lower.includes('wallet') || lower.includes('upi')) {
+    return Wallet;
+  }
+  return CreditCard;
 }
 
 const PaymentDialog: React.FC<PaymentDialogProps> = ({
@@ -33,97 +72,176 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   cashier,
   owner,
   fetchOrders,
-  clearSelectedOrder
+  clearSelectedOrder,
+  fullscreen = false,
 }) => {
   const { paymentModes, fetchPaymentModes, posProfile: storePosProfile } = usePOSStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [discountType] = useState<'percentage'>('percentage'); // Only percentage now
-  const [discountValue, setDiscountValue] = useState<string>('');
-  const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
-  const [paymentInputs, setPaymentInputs] = useState<{ [mode: string]: string }>({});
+  const [adjustTab, setAdjustTab] = useState<AdjustTab>('discount');
+  const [discountType, setDiscountType] = useState<DiscountType>('percent');
+  const [discountValue, setDiscountValue] = useState('');
+  const [appliedDiscountValue, setAppliedDiscountValue] = useState('');
+  const [appliedDiscountType, setAppliedDiscountType] = useState<DiscountType>('percent');
+  const [voucherInput, setVoucherInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; label: string } | null>(null);
+  const [paymentInputs, setPaymentInputs] = useState<Record<string, string>>({});
+  const [activeMode, setActiveMode] = useState('');
+  const [tipAmount, setTipAmount] = useState(0);
+  const [customTip, setCustomTip] = useState('');
+  const [emailInvoice, setEmailInvoice] = useState(false);
+  const [preview, setPreview] = useState<PaymentPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const tipsEnabled = storePosProfile?.enable_tips !== 0;
+  const allowPartial = storePosProfile?.allow_partial_payment === 1;
+  const discountEnabled = storePosProfile?.enable_discount === 1;
+  const hasTipItem = Boolean(storePosProfile?.tip_item);
 
   useEffect(() => {
     fetchPaymentModes();
   }, [fetchPaymentModes]);
 
-  // Calculate split payment total
-  const payments = paymentModes
-    .map((mode: any) => {
-      const id = typeof mode === 'string' ? mode : mode.id;
-      const amount = parseFloat(paymentInputs[id] || '');
-      return amount > 0 ? { mode_of_payment: id, amount } : null;
-    })
-    .filter(Boolean);
-  const paymentsTotal = payments.reduce((sum, p: any) => sum + p.amount, 0);
+  useEffect(() => {
+    if (paymentModes.length && !activeMode) {
+      const preferred = paymentModes.find((m) => m === DEFAULT_PAYMENT_MODE) || paymentModes[0];
+      setActiveMode(typeof preferred === 'string' ? preferred : preferred);
+    }
+  }, [paymentModes, activeMode]);
 
-  const handleApplyDiscount = () => {
-    const value = parseFloat(discountValue);
-    if (isNaN(value) || value <= 0) {
+  const additionalDiscountPct =
+    appliedDiscountType === 'percent' ? parseFloat(appliedDiscountValue || '0') || 0 : 0;
+  const additionalDiscountAmt =
+    appliedDiscountType === 'amount' ? parseFloat(appliedDiscountValue || '0') || 0 : 0;
+
+  const refreshPreview = useCallback(async () => {
+    setPreviewLoading(true);
+    try {
+      const result = await previewPaymentTotals({
+        invoice,
+        additional_discount_percentage: additionalDiscountPct,
+        additional_discount_amount: additionalDiscountAmt,
+        coupon_code: appliedCoupon?.code,
+        tip_amount: tipAmount,
+      });
+      setPreview(result);
+      setError(null);
+    } catch (err) {
+      setPreview(null);
+      setError(err instanceof Error ? err.message : t('errors.payment_preview_failed'));
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [
+    invoice,
+    additionalDiscountPct,
+    additionalDiscountAmt,
+    appliedCoupon?.code,
+    tipAmount,
+  ]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void refreshPreview();
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [refreshPreview]);
+
+  const dueTotal = preview?.total_with_tip ?? roundedTotal + tipAmount;
+  const enteredTotal = paymentsTotal(paymentInputs);
+  const changeDue = Math.max(0, enteredTotal - dueTotal);
+  const remaining = Math.max(0, dueTotal - enteredTotal);
+  const payments = buildPaymentsList(paymentModes, paymentInputs);
+
+  useEffect(() => {
+    if (!dueTotal || !activeMode) {
+      return;
+    }
+    const hasDefault = paymentModes.includes(DEFAULT_PAYMENT_MODE);
+    const fillMode = hasDefault ? DEFAULT_PAYMENT_MODE : activeMode;
+    setPaymentInputs((prev) => {
+      const hasEnteredAmount = Object.values(prev).some(
+        (value) => value && parseFloat(value) > 0,
+      );
+      if (hasEnteredAmount) {
+        return prev;
+      }
+      return { [fillMode]: String(dueTotal) };
+    });
+  }, [dueTotal, paymentModes, activeMode]);
+
+  const handleNumpadKey = (key: string) => {
+    if (!activeMode) {
+      return;
+    }
+    setPaymentInputs((inputs) => {
+      const current = inputs[activeMode] || '';
+      if (key === 'back') {
+        return { ...inputs, [activeMode]: current.slice(0, -1) };
+      }
+      if (key === 'clear') {
+        return { ...inputs, [activeMode]: '' };
+      }
+      if (key === '.' && current.includes('.')) {
+        return inputs;
+      }
+      return { ...inputs, [activeMode]: current + key };
+    });
+  };
+
+  const handleApplyDiscount = (value?: string, type?: DiscountType) => {
+    const nextType = type ?? discountType;
+    const nextValue = value ?? discountValue;
+    const parsed = parseFloat(nextValue);
+    if (isNaN(parsed) || parsed <= 0) {
       setError(t('errors.invalid_discount'));
       return;
     }
-    if (value > 100) {
+    if (nextType === 'percent' && parsed > 100) {
       setError(t('errors.discount_exceeds_max'));
       return;
     }
-    const calculatedDiscount = (grandTotal * value) / 100;
-    setAppliedDiscount(calculatedDiscount);
+    setAppliedDiscountType(nextType);
+    setAppliedDiscountValue(nextValue);
+    setDiscountValue(nextValue);
     setError(null);
   };
 
-  // Order summary logic
-  const subtotal = grandTotal;
-  const adjustment = roundedTotal - grandTotal;
-  const roundedAdjustment = Math.round(adjustment * 100) / 100;
-  const showAdjustment = Math.abs(roundedAdjustment) > 0.001;
-  const totalDiscount = appliedDiscount;
-  const discountedTotal = Math.max(0, subtotal - totalDiscount);
-  // If discount is applied, round up; else, round normally
-  const finalTotal = appliedDiscount > 0 ? Math.ceil(discountedTotal) : Math.round(discountedTotal);
-  const finalAdjustment = finalTotal - discountedTotal;
-  const roundedFinalAdjustment = Math.round(finalAdjustment * 100) / 100;
-  const showFinalAdjustment = Math.abs(roundedFinalAdjustment) > 0.001;
-
-  useEffect(()=>{
-    const defaultPaymentModePresent=paymentModes.find((mode)=>mode===DEFAULT_PAYMENT_MODE)
-    //only one payment mode should be present, then autofill the final amount, if not do not fill
-    const otherPaymentModesNotEntered=Object.keys(paymentInputs).length<=1;
-    if(finalTotal && paymentModes && DEFAULT_PAYMENT_MODE && defaultPaymentModePresent && otherPaymentModesNotEntered){
-      //check if default payment mode is present in paymentModes
-      setPaymentInputs((prev)=>({ 
-        ...prev,
-        [DEFAULT_PAYMENT_MODE]:String(finalTotal) 
-      }))
-    }
-  },[finalTotal,paymentModes])
-
-  // Helper to calculate remaining balance
-  const getRemainingBalance = (currentId: string) => {
-    const totalEntered = Object.entries(paymentInputs)
-      .filter(([id]) => id !== currentId)
-      .reduce((sum, [_, val]) => sum + (parseFloat(val) || 0), 0);
-    return Math.max(0, finalTotal - totalEntered);
+  const clearDiscount = () => {
+    setDiscountValue('');
+    setAppliedDiscountValue('');
+    setAppliedDiscountType('percent');
   };
 
-  // Handler for input focus to auto-fill remaining balance
-  const handlePaymentInputFocus = (id: string) => {
-    setPaymentInputs(inputs => {
-      // Only auto-fill if the field is empty or zero
-      if (!inputs[id] || parseFloat(inputs[id]) === 0) {
-        const remaining = getRemainingBalance(id);
-        return { ...inputs, [id]: remaining > 0 ? String(remaining) : '' };
-      }
-      return inputs;
-    });
+  const handleApplyVoucher = async () => {
+    if (!voucherInput.trim()) {
+      setError(t('payment.voucher_required'));
+      return;
+    }
+    try {
+      const result = await validatePosCoupon(voucherInput.trim(), invoice);
+      setAppliedCoupon({ code: result.coupon_code, label: result.label });
+      setVoucherInput('');
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('payment.voucher_invalid'));
+    }
   };
 
   const handlePayment = async () => {
     setIsProcessing(true);
     setError(null);
     try {
+      if (!allowPartial && enteredTotal + 0.01 < dueTotal) {
+        setError(t('errors.full_payment_required'));
+        setIsProcessing(false);
+        return;
+      }
+
       await call.post('ury.ury.doctype.ury_order.ury_order.make_invoice', {
-        additionalDiscount: discountValue ? parseInt(discountValue, 10) : 0,
+        additionalDiscount: additionalDiscountPct || 0,
+        additional_discount_amount: additionalDiscountAmt || 0,
+        coupon_code: appliedCoupon?.code || undefined,
         cashier,
         customer,
         invoice,
@@ -131,23 +249,26 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
         payments,
         pos_profile: posProfile,
         table: table ?? '',
+        tip_amount: hasTipItem ? tipAmount : 0,
+        email_invoice: emailInvoice ? 1 : 0,
       });
-      // Show toast and reload orders (assume showToast and reload available globally)
-      if (typeof window !== 'undefined' && (window as any).showToast) {
-        (window as any).showToast.success('Payment successful');
-      }
       onClose();
       clearSelectedOrder();
       await fetchOrders();
     } catch (err) {
       setError((err as Error).message);
-      if (err && typeof err === 'object' && '_server_messages' in err && typeof (err as any)._server_messages === 'string') {
+      if (
+        err &&
+        typeof err === 'object' &&
+        '_server_messages' in err &&
+        typeof (err as { _server_messages: string })._server_messages === 'string'
+      ) {
         try {
-          const messages = JSON.parse((err as any)._server_messages);
+          const messages = JSON.parse((err as { _server_messages: string })._server_messages);
           const messageObj = JSON.parse(messages[0]);
           setError(messageObj.message || (err as Error).message);
         } catch {
-          // keep default error message
+          // keep default
         }
       }
     } finally {
@@ -155,145 +276,417 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
   };
 
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent variant="xlarge" className="bg-white w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0" showCloseButton={false}>
-        {/* Left Column - Discount and Payment Mode */}
-        <div className="md:w-1/2 p-6 border-b md:border-b-0 md:border-r border-gray-200 overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">{t('payment.title')}</h2>
+  const fillRemaining = () => {
+    if (!activeMode) {
+      return;
+    }
+    setPaymentInputs((prev) => ({
+      ...prev,
+      [activeMode]: String(remaining > 0 ? remaining : dueTotal),
+    }));
+  };
+
+  const summary = preview ?? {
+    subtotal: grandTotal,
+    net_total: grandTotal,
+    discount_amount: 0,
+    additional_discount_percentage: 0,
+    coupon_code: null,
+    rounding_adjustment: roundedTotal - grandTotal,
+    grand_total: grandTotal,
+    rounded_total: roundedTotal,
+    tip_amount: tipAmount,
+    total_with_tip: roundedTotal + tipAmount,
+    total_taxes: 0,
+  };
+
+  const adjustTabs = useMemo(() => {
+    const tabs: Array<{ id: AdjustTab; label: string; icon: React.ElementType }> = [];
+    if (discountEnabled) {
+      tabs.push({ id: 'discount', label: t('payment.discount'), icon: Percent });
+    }
+    tabs.push({ id: 'voucher', label: t('payment.voucher'), icon: Ticket });
+    if (tipsEnabled) {
+      tabs.push({ id: 'tip', label: t('payment.tip'), icon: Sparkles });
+    }
+    return tabs;
+  }, [discountEnabled, tipsEnabled]);
+
+  useEffect(() => {
+    if (!adjustTabs.some((tab) => tab.id === adjustTab)) {
+      setAdjustTab(adjustTabs[0]?.id ?? 'voucher');
+    }
+  }, [adjustTabs, adjustTab]);
+
+  const body = (
+    <div
+      className={cn(
+        'flex h-full flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 lg:flex-row',
+        fullscreen ? 'w-full' : 'max-h-[92vh] w-full max-w-6xl',
+      )}
+    >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-slate-200/80 lg:border-b-0 lg:border-e">
+        <div className="border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur sm:px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {t('payment.title')}
+              </p>
+              <h2 className="truncate text-lg font-semibold text-slate-900">{invoice}</h2>
+              <p className="truncate text-sm text-slate-500">
+                {customer}
+                {table ? ` · ${t('context.table')} ${table}` : ''}
+              </p>
+            </div>
+            <Button onClick={onClose} variant="ghost" size="icon" className="shrink-0">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="mt-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-500">{t('payment.amount_due')}</p>
+              <p className="text-4xl font-bold tabular-nums tracking-tight text-primary">
+                {formatCurrency(dueTotal)}
+              </p>
+            </div>
+            <div className="text-end text-sm">
+              <p className="text-slate-500">{t('payment.total_entered')}</p>
+              <p
+                className={cn(
+                  'font-semibold tabular-nums',
+                  enteredTotal + 0.01 >= dueTotal ? 'text-emerald-600' : 'text-amber-600',
+                )}
+              >
+                {formatCurrency(enteredTotal)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {t('payment.payment_methods')}
+          </p>
+          <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {paymentModes.map((mode) => {
+              const Icon = modeIcon(mode);
+              const entered = parseFloat(paymentInputs[mode] || '') || 0;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setActiveMode(mode)}
+                  className={cn(
+                    'relative flex min-h-[5rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 px-3 py-3 text-center transition-all',
+                    activeMode === mode
+                      ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm',
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5', activeMode === mode ? 'text-white' : 'text-slate-600')} />
+                  <span className="text-sm font-semibold leading-tight">{mode}</span>
+                  {entered > 0 && (
+                    <span
+                      className={cn(
+                        'text-xs font-medium tabular-nums',
+                        activeMode === mode ? 'text-white/90' : 'text-emerald-600',
+                      )}
+                    >
+                      {formatCurrency(entered)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={fillRemaining} disabled={!activeMode}>
+              {t('payment.fill_remaining')}
+            </Button>
             <Button
-              onClick={onClose}
+              type="button"
               variant="ghost"
-              size="icon"
-              className="p-2"
+              size="sm"
+              onClick={() => activeMode && setPaymentInputs((p) => ({ ...p, [activeMode]: '' }))}
+              disabled={!activeMode}
             >
-              <X className="w-5 h-5" />
+              {t('payment.clear_mode')}
             </Button>
           </div>
 
-          {/* Discount Section (conditional) */}
-          {storePosProfile?.enable_discount === 1 && (
-            <div className="space-y-4 mb-6">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Percent className="w-5 h-5" />
-                {t('payment.apply_discount')}
-              </h3>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
-                  placeholder={t('payment.discount_placeholder')}
-                  size="sm"
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleApplyDiscount}
-                  variant="default"
-                  size="sm"
-                >
-                  {t('common.apply')}
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaymentNumpad onKey={handleNumpadKey} disabled={isProcessing || !activeMode} />
 
-          {/* Payment Methods Section - Split Payment */}
-          <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-semibold">{t('payment.payment_methods')}</h3>
-            <div className="grid grid-cols-1 gap-3">
-              {paymentModes.map((mode: any) => {
-                const id = typeof mode === 'string' ? mode : mode.id;
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex gap-1 overflow-x-auto">
+              {adjustTabs.map((tab) => {
+                const Icon = tab.icon;
                 return (
-                  <div key={id} className="flex items-center gap-3">
-                    <span className="w-24 font-medium">{typeof mode === 'string' ? mode : mode.name}</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={paymentInputs[id] || ''}
-                      onChange={e => setPaymentInputs(inputs => ({ ...inputs, [id]: e.target.value }))}
-                      onFocus={() => handlePaymentInputFocus(id)}
-                      placeholder={t('payment.amount_placeholder')}
-                      className="flex-1"
-                      size="sm"
-                      disabled={isProcessing}
-                    />
-                  </div>
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setAdjustTab(tab.id)}
+                    className={cn(
+                      'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition',
+                      adjustTab === tab.id
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.label}
+                  </button>
                 );
               })}
             </div>
-            <div className="flex justify-between mt-2 text-sm">
-              <span className="font-medium">{t('payment.total_entered')}</span>
-              <span className={'text-green-600 font-semibold flex items-center gap-1'}>
-                {formatCurrency(paymentsTotal)} / {formatCurrency(finalTotal)}
-                {paymentsTotal > finalTotal && (
-                  <span className="text-yellow-700 font-semibold">
-                    <Coins className="inline w-4 h-4 ml-1 text-yellow-500" />
-                    <span className="text-yellow-500 font-bold ml-1">{formatCurrency(paymentsTotal - finalTotal)}</span>
-                  </span>
-                )}
-              </span>
-            </div>
+
+            {adjustTab === 'discount' && discountEnabled && (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDiscountType('percent')}
+                    className={cn(
+                      'rounded-lg px-3 py-1.5 text-sm font-medium',
+                      discountType === 'percent' ? 'bg-primary text-white' : 'bg-slate-100',
+                    )}
+                  >
+                    %
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiscountType('amount')}
+                    className={cn(
+                      'rounded-lg px-3 py-1.5 text-sm font-medium',
+                      discountType === 'amount' ? 'bg-primary text-white' : 'bg-slate-100',
+                    )}
+                  >
+                    $
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {DISCOUNT_PRESETS.map((pct) => (
+                    <Button
+                      key={pct}
+                      type="button"
+                      size="sm"
+                      variant={appliedDiscountValue === String(pct) && appliedDiscountType === 'percent' ? 'default' : 'outline'}
+                      onClick={() => {
+                        setDiscountType('percent');
+                        handleApplyDiscount(String(pct), 'percent');
+                      }}
+                    >
+                      {pct}%
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value)}
+                    placeholder={
+                      discountType === 'percent'
+                        ? t('payment.discount_placeholder')
+                        : t('payment.discount_amount_placeholder')
+                    }
+                    size="sm"
+                    className="flex-1"
+                  />
+                  <Button onClick={() => handleApplyDiscount()} variant="default" size="sm">
+                    {t('common.apply')}
+                  </Button>
+                  {appliedDiscountValue ? (
+                    <Button onClick={clearDiscount} variant="ghost" size="sm">
+                      {t('common.clear')}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            )}
+
+            {adjustTab === 'voucher' && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">{t('payment.voucher_hint')}</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={voucherInput}
+                    onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+                    placeholder={t('payment.voucher_placeholder')}
+                    size="sm"
+                    className="flex-1 uppercase"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        void handleApplyVoucher();
+                      }
+                    }}
+                  />
+                  <Button onClick={() => void handleApplyVoucher()} variant="default" size="sm">
+                    {t('common.apply')}
+                  </Button>
+                </div>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+                    <span className="flex items-center gap-2 font-medium text-emerald-800">
+                      <Gift className="h-4 w-4" />
+                      {appliedCoupon.label}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-emerald-700 underline"
+                      onClick={() => setAppliedCoupon(null)}
+                    >
+                      {t('common.remove')}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            {adjustTab === 'tip' && tipsEnabled && (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {[10, 15, 20].map((pct) => (
+                    <Button
+                      key={pct}
+                      type="button"
+                      variant={
+                        tipAmount === Math.round(summary.rounded_total * pct) / 100 ? 'default' : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => {
+                        setTipAmount(Math.round((summary.rounded_total * pct) / 100));
+                        setCustomTip('');
+                      }}
+                    >
+                      {pct}%
+                    </Button>
+                  ))}
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder={t('payment.tip_custom')}
+                    value={customTip}
+                    onChange={(e) => {
+                      setCustomTip(e.target.value);
+                      const val = parseFloat(e.target.value);
+                      setTipAmount(!isNaN(val) && val >= 0 ? val : 0);
+                    }}
+                    className="w-28"
+                    size="sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            <label className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={emailInvoice}
+                onChange={(e) => setEmailInvoice(e.target.checked)}
+                className="rounded border-slate-300"
+              />
+              <Mail className="h-4 w-4 text-slate-500" />
+              {t('payment.email_invoice')}
+            </label>
           </div>
         </div>
+      </div>
 
-        {/* Right Column - Order Summary and Pay Button */}
-        <div className="md:w-1/2 p-6 overflow-y-auto">
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm">{error}</p>
+      <div className="flex w-full flex-col bg-slate-900 p-4 text-white sm:p-6 lg:w-[24rem] xl:w-[26rem]">
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3">
+            <p className="text-sm text-red-100">{error}</p>
+          </div>
+        )}
+
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          {t('payment.order_summary')}
+        </h3>
+        <div className="mt-4 flex-1 space-y-2 text-sm">
+          <div className="flex justify-between text-slate-300">
+            <span>{t('payment.subtotal')}</span>
+            <span className="tabular-nums">{formatCurrency(summary.subtotal)}</span>
+          </div>
+          {summary.discount_amount > 0 && (
+            <div className="flex justify-between text-emerald-300">
+              <span>{t('payment.discount')}</span>
+              <span className="tabular-nums">-{formatCurrency(summary.discount_amount)}</span>
             </div>
           )}
-
-          {/* Order Summary */}
-          <div className="space-y-3 mb-6">
-            <h3 className="text-lg font-semibold">{t('payment.order_summary')}</h3>
-            <div className="space-y-2 text-sm">
-              {/* Subtotal (Grand Total) */}
-              <div className="flex justify-between">
-                <span className="text-gray-600">{t('payment.subtotal')}</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
-              {/* Discount */}
-              {appliedDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>{t('payment.discount')}</span>
-                  <span>-{formatCurrency(appliedDiscount)}</span>
-                </div>
-              )}
-              {/* Adjustment (if any) */}
-              {showFinalAdjustment && (
-                <div className="flex justify-between text-blue-600">
-                  <span>{t('payment.adjustment')}</span>
-                  <span>{roundedFinalAdjustment > 0 ? '+' : ''}{formatCurrency(roundedFinalAdjustment)}</span>
-                </div>
-              )}
-              {/* Final Total (Rounded) */}
-              <div className="border-t pt-2">
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>{t('payment.total')}</span>
-                  <span>{formatCurrency(finalTotal)}</span>
-                </div>
-              </div>
+          {appliedCoupon && (
+            <div className="flex justify-between text-emerald-300">
+              <span>{t('payment.voucher')}</span>
+              <span>{appliedCoupon.label}</span>
+            </div>
+          )}
+          {Math.abs(summary.rounding_adjustment) > 0.001 && (
+            <div className="flex justify-between text-sky-300">
+              <span>{t('payment.adjustment')}</span>
+              <span className="tabular-nums">
+                {summary.rounding_adjustment > 0 ? '+' : ''}
+                {formatCurrency(summary.rounding_adjustment)}
+              </span>
+            </div>
+          )}
+          {tipAmount > 0 && (
+            <div className="flex justify-between text-slate-300">
+              <span>{t('payment.tip_amount')}</span>
+              <span className="tabular-nums">{formatCurrency(tipAmount)}</span>
+            </div>
+          )}
+          <div className="border-t border-slate-700 pt-3">
+            <div className="flex justify-between text-lg font-bold">
+              <span>{t('payment.total')}</span>
+              <span className="tabular-nums">{formatCurrency(dueTotal)}</span>
             </div>
           </div>
-
-          {/* Payment Button */}
-          <Button
-            onClick={handlePayment}
-            disabled={isProcessing || payments.length === 0}
-            variant={isProcessing || payments.length === 0 ? "secondary" : "default"}
-            className="w-full"
-          >
-            {isProcessing ? t('payment.processing') : t('payment.pay_button', { amount: formatCurrency(paymentsTotal > 0 ? paymentsTotal : finalTotal) })}
-          </Button>
+          {changeDue > 0.01 && (
+            <div className="flex justify-between rounded-lg bg-amber-500/15 px-3 py-2 text-amber-200">
+              <span>{t('payment.change_due')}</span>
+              <span className="font-semibold tabular-nums">{formatCurrency(changeDue)}</span>
+            </div>
+          )}
+          {remaining > 0.01 && (
+            <div className="flex justify-between text-amber-300">
+              <span>{t('payment.remaining')}</span>
+              <span className="tabular-nums">{formatCurrency(remaining)}</span>
+            </div>
+          )}
         </div>
+
+        <Button
+          onClick={() => void handlePayment()}
+          disabled={isProcessing || payments.length === 0 || previewLoading}
+          className="mt-6 h-14 w-full bg-white text-lg font-bold text-slate-900 hover:bg-slate-100"
+        >
+          {isProcessing
+            ? t('payment.processing')
+            : t('payment.pay_button', {
+                amount: formatCurrency(enteredTotal > 0 ? enteredTotal : dueTotal),
+              })}
+        </Button>
+        <p className="mt-3 text-center text-xs text-slate-500">{t('payment.bill_split_hint')}</p>
+      </div>
+    </div>
+  );
+
+  if (fullscreen) {
+    return <div className="flex h-full flex-col overflow-hidden">{body}</div>;
+  }
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent
+        variant="xlarge"
+        className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden border-0 bg-transparent p-0 shadow-2xl"
+        showCloseButton={false}
+      >
+        {body}
       </DialogContent>
     </Dialog>
   );
 };
 
-export default PaymentDialog; 
+export default PaymentDialog;

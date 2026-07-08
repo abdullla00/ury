@@ -33,6 +33,7 @@ export interface MenuItem extends Omit<APIMenuItem, 'rate' | 'item_image'> {
   special_dish?: 1 | 0;
   variants?: Array<{ id: string; name: string; price: number }>;
   addons?: Array<{ id: string; name: string; price: number; category: 'sides' | 'drinks' | 'desserts' }>;
+  has_modifiers?: boolean;
   selectedVariant?: { id: string; name: string; price: number };
   selectedAddons?: Array<{ id: string; name: string; price: number }>;
   uniqueId?: string;
@@ -120,6 +121,12 @@ interface POSState {
   tableOrder: TableOrder | null;
   isInitializing: boolean;
   orderComment: string;
+  orderAllergyNote: string;
+  noOfPax: number;
+  tabName: string | null;
+  invoicePrinted: number;
+  orderStartedAt: string | null;
+  favouriteItems: Array<{ item_name: string; qty: number }>;
 }
 
 interface POSStore extends POSState {
@@ -152,13 +159,24 @@ interface POSStore extends POSState {
   getItemQuantityFromCart: (item: MenuItem) => number;
   loadTableOrder: (table: string) => Promise<void>;
   clearTableOrder: () => void;
+  startDineInFromTable: (table: string, room: string) => Promise<void>;
   isMenuInteractionDisabled: () => boolean;
   isOrderInteractionDisabled: () => boolean;
   initializeApp: () => Promise<void>;
   setOrderForUpdate: (orderId: string | null) => void;
-  resetOrderState: () => void;
+  resetOrderState: (options?: { keepTable?: boolean }) => void;
   setSelectedAggregator: (aggregator: Aggregator | null) => void;
   setOrderComment: (comment: string) => void;
+  setOrderAllergyNote: (note: string) => void;
+  repriceActiveOrders: () => void;
+  releaseTable: () => void;
+  setOrderFromSync: (invoiceName: string) => void;
+  setNoOfPax: (pax: number) => void;
+  startDirectOrder: () => void;
+  startTabOrder: (name: string) => void;
+  restoreDraftCart: () => void;
+  fetchFavouriteItems: () => Promise<void>;
+  hasTransferAccess: (userRoles: string[]) => boolean;
 }
 
 const generateUniqueId = (item: OrderItem): string => {
@@ -172,6 +190,11 @@ const calculateItemPrice = (item: OrderItem): number => {
   const addonsTotal = item.selectedAddons?.reduce((sum, addon) => sum + addon.price, 0) || 0;
   return basePrice + addonsTotal;
 };
+
+function defaultCustomerForType(type: OrderType): Customer | null {
+  const name = ORDER_TYPE_DEFAULT_CUSTOMER[type];
+  return name ? { id: name, name, phone: '' } : null;
+}
 
 export const usePOSStore = create<POSStore>((set, get) => ({
   menuItems: [],
@@ -210,6 +233,12 @@ export const usePOSStore = create<POSStore>((set, get) => ({
   isUpdatingOrder: false,
   orderId: null,
   orderComment: '',
+  orderAllergyNote: '',
+  noOfPax: 1,
+  tabName: null,
+  invoicePrinted: 0,
+  orderStartedAt: null,
+  favouriteItems: [],
 
   initializeApp: async () => {
     try {
@@ -233,6 +262,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
         return;
       }
 
+      get().restoreDraftCart();
       set({ isInitializing: false });
     } catch (error) {
       set({ 
@@ -303,6 +333,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
         description: item.description || '',
         special_dish: item.special_dish || 0,
         tax_rate: 0,
+        has_modifiers: Boolean((item as { has_modifiers?: boolean }).has_modifiers),
       }));
 
       set({ menuItems });
@@ -396,6 +427,7 @@ export const usePOSStore = create<POSStore>((set, get) => ({
         const newOrders = [...get().activeOrders, { ...item, uniqueId }];
         set({ activeOrders: newOrders });
       }
+      sessionStorage.setItem('ury_pos_draft_cart', JSON.stringify(get().activeOrders));
     } catch (error) {
       if (error instanceof CartError) {
         set({ error: error.message });
@@ -443,7 +475,10 @@ export const usePOSStore = create<POSStore>((set, get) => ({
 
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   setSearchQuery: (query) => set({ searchQuery: query }),
-  setSelectedCustomer: (customer) => set({ selectedCustomer: customer }),
+  setSelectedCustomer: (customer) => {
+    set({ selectedCustomer: customer });
+    void get().fetchFavouriteItems();
+  },
   setSelectedTable: (table: string | null, room: string | null, doNotLoadOrder: boolean = false) => {
     set({ selectedTable: table, selectedRoom: room });
     if (table ) {
@@ -457,15 +492,9 @@ export const usePOSStore = create<POSStore>((set, get) => ({
     }
   },
   setSelectedOrderType: (type) => {
-    const { fetchMenuItems } = get();
-    const defaultCustomerName = ORDER_TYPE_DEFAULT_CUSTOMER[type];
-
-    set({ 
-      activeOrders: [],
+    set({
       selectedOrderType: type,
-      selectedCustomer: defaultCustomerName
-        ? { id: defaultCustomerName, name: defaultCustomerName, phone: '' }
-        : null,
+      selectedCustomer: defaultCustomerForType(type),
       ...(type !== DINE_IN
         ? {
             selectedTable: null,
@@ -475,16 +504,22 @@ export const usePOSStore = create<POSStore>((set, get) => ({
             tableOrder: null,
           }
         : {}),
+      ...(type !== 'Aggregators' ? { selectedAggregator: null } : {}),
     });
-    
-    if (type !== 'Aggregators') {
-      fetchMenuItems();
-    }
+
+    const refresh = async () => {
+      if (type !== 'Aggregators') {
+        await get().fetchMenuItems();
+        get().repriceActiveOrders();
+      }
+    };
+    void refresh();
   },
   setQuickFilter: (filter) => set({ quickFilter: filter }),
   setSelectedItem: (item) => set({ selectedItem: item }),
   setSelectedAggregator: (aggregator) => set({ selectedAggregator: aggregator }),
   setOrderComment: (comment: string) => set({ orderComment: comment }),
+  setOrderAllergyNote: (note: string) => set({ orderAllergyNote: note }),
 
   processPayment: async (paymentMode: string, amount: number) => {
     try {
@@ -630,22 +665,31 @@ export const usePOSStore = create<POSStore>((set, get) => ({
           } : null,
           isUpdatingOrder: true,
           orderId: order.name,
+          noOfPax: (order as { no_of_pax?: number }).no_of_pax || 1,
+          invoicePrinted: (order as { invoice_printed?: number }).invoice_printed ?? 0,
+          orderStartedAt:
+            (order as { arrived_time?: string }).arrived_time ||
+            (order as { creation?: string }).creation ||
+            null,
         });
+        void get().fetchFavouriteItems();
       } else {
-        set({ 
+        set({
           tableOrder: null,
           activeOrders: [],
-          selectedCustomer: null,
+          selectedCustomer: defaultCustomerForType(DINE_IN),
           isUpdatingOrder: false,
           orderId: null,
+          invoicePrinted: 0,
+          orderStartedAt: null,
         });
       }
     } catch (error) {
-      set({ 
+      set({
         error: 'Failed to load table order',
         tableOrder: null,
         activeOrders: [],
-        selectedCustomer: null,
+        selectedCustomer: defaultCustomerForType(DINE_IN),
         isUpdatingOrder: false,
         orderId: null,
       });
@@ -655,13 +699,31 @@ export const usePOSStore = create<POSStore>((set, get) => ({
   },
 
   clearTableOrder: () => {
-    set({ 
+    const { selectedOrderType } = get();
+    set({
       tableOrder: null,
       activeOrders: [],
-      selectedCustomer: null,
+      selectedCustomer: defaultCustomerForType(selectedOrderType),
       isUpdatingOrder: false,
       orderId: null,
     });
+  },
+
+  startDineInFromTable: async (table: string, room: string) => {
+    set({
+      selectedOrderType: DINE_IN,
+      selectedTable: table,
+      selectedRoom: room,
+      selectedCustomer: defaultCustomerForType(DINE_IN),
+      selectedAggregator: null,
+      isUpdatingOrder: false,
+      orderId: null,
+      tableOrder: null,
+      orderComment: '',
+      orderAllergyNote: '',
+    });
+    await get().loadTableOrder(table);
+    await get().fetchMenuItems();
   },
 
   setOrderForUpdate: (orderId: string | null) => {
@@ -671,13 +733,23 @@ export const usePOSStore = create<POSStore>((set, get) => ({
     });
   },
 
-  resetOrderState: () => {
+  resetOrderState: (options?: { keepTable?: boolean }) => {
     const { fetchMenuItems } = get();
-    
+    const state = get();
+    const keepTable = options?.keepTable && state.selectedOrderType === DINE_IN && state.selectedTable;
+
     set({
-      selectedCustomer: null,
-      selectedTable: null,
-      selectedRoom: null,
+      selectedCustomer: keepTable
+        ? defaultCustomerForType(DINE_IN)
+        : ORDER_TYPE_DEFAULT_CUSTOMER[DEFAULT_ORDER_TYPE]
+          ? {
+              id: ORDER_TYPE_DEFAULT_CUSTOMER[DEFAULT_ORDER_TYPE]!,
+              name: ORDER_TYPE_DEFAULT_CUSTOMER[DEFAULT_ORDER_TYPE]!,
+              phone: '',
+            }
+          : null,
+      selectedTable: keepTable ? state.selectedTable : null,
+      selectedRoom: keepTable ? state.selectedRoom : null,
       selectedAggregator: null,
       isUpdatingOrder: false,
       orderId: null,
@@ -686,11 +758,42 @@ export const usePOSStore = create<POSStore>((set, get) => ({
       orderLoading: false,
       menuItems: [],
       error: null,
-      selectedOrderType: DEFAULT_ORDER_TYPE,
+      selectedOrderType: keepTable ? DINE_IN : DEFAULT_ORDER_TYPE,
       orderComment: '',
+      orderAllergyNote: '',
+      invoicePrinted: 0,
+      orderStartedAt: null,
+      favouriteItems: [],
+      tabName: keepTable ? state.tabName : null,
     });
 
     fetchMenuItems();
+  },
+
+  fetchFavouriteItems: async () => {
+    const { selectedCustomer } = get();
+    if (!selectedCustomer?.name || selectedCustomer.name === 'Dine in') {
+      set({ favouriteItems: [] });
+      return;
+    }
+    try {
+      const { call } = await import('../lib/frappe-sdk');
+      const res = await call.get(
+        'ury.ury.doctype.ury_order.ury_order.customer_favourite_item',
+        { customer_name: selectedCustomer.name },
+      );
+      set({ favouriteItems: Array.isArray(res.message) ? res.message : [] });
+    } catch {
+      set({ favouriteItems: [] });
+    }
+  },
+
+  hasTransferAccess: (userRoles: string[]) => {
+    const transferRoles = get().posProfile?.transfer_roles ?? [];
+    if (transferRoles.length === 0) {
+      return false;
+    }
+    return transferRoles.some((role) => userRoles.includes(role));
   },
 
   isMenuInteractionDisabled: () => {
@@ -701,5 +804,111 @@ export const usePOSStore = create<POSStore>((set, get) => ({
   isOrderInteractionDisabled: () => {
     const state = get();
     return state.orderLoading;
-  }
+  },
+
+  repriceActiveOrders: () => {
+    const { activeOrders, menuItems } = get();
+    if (!activeOrders.length || !menuItems.length) {
+      return;
+    }
+
+    const repriced = activeOrders.map((orderItem) => {
+      const menuItem = menuItems.find(
+        (m) => m.id === orderItem.id || m.item === orderItem.item,
+      );
+      if (!menuItem) {
+        return orderItem;
+      }
+
+      let next: OrderItem = { ...orderItem, price: menuItem.price };
+      if (orderItem.selectedVariant && menuItem.variants?.length) {
+        const variant = menuItem.variants.find(
+          (v) =>
+            v.id === orderItem.selectedVariant?.id ||
+            v.name === orderItem.selectedVariant?.name,
+        );
+        if (variant) {
+          next = { ...next, selectedVariant: variant };
+        }
+      }
+      return next;
+    });
+
+    set({ activeOrders: repriced });
+  },
+
+  releaseTable: () => {
+    const { selectedTable, selectedOrderType } = get();
+    if (selectedOrderType === DINE_IN && selectedTable) {
+      set({
+        selectedTable: null,
+        selectedRoom: null,
+        tableOrder: null,
+        isUpdatingOrder: false,
+        orderId: null,
+      });
+    }
+  },
+
+  setOrderFromSync: (invoiceName: string) => {
+    set({ orderId: invoiceName, isUpdatingOrder: true });
+  },
+
+  setNoOfPax: (pax: number) => {
+    const safe = Math.max(1, Math.min(20, Math.floor(pax)));
+    set({ noOfPax: safe });
+  },
+
+  startDirectOrder: () => {
+    set({
+      selectedOrderType: DEFAULT_ORDER_TYPE,
+      selectedTable: null,
+      selectedRoom: null,
+      selectedCustomer: defaultCustomerForType(DEFAULT_ORDER_TYPE),
+      selectedAggregator: null,
+      activeOrders: [],
+      isUpdatingOrder: false,
+      orderId: null,
+      tableOrder: null,
+      orderComment: '',
+      orderAllergyNote: '',
+      tabName: null,
+      noOfPax: 1,
+    });
+    void get().fetchMenuItems();
+  },
+
+  startTabOrder: (name: string) => {
+    set({
+      selectedOrderType: DEFAULT_ORDER_TYPE,
+      selectedTable: null,
+      selectedRoom: null,
+      selectedCustomer: { id: name, name, phone: '' },
+      selectedAggregator: null,
+      activeOrders: [],
+      isUpdatingOrder: false,
+      orderId: null,
+      tableOrder: null,
+      orderComment: '',
+      orderAllergyNote: '',
+      tabName: name,
+      noOfPax: 1,
+    });
+    void get().fetchMenuItems();
+  },
+
+  restoreDraftCart: () => {
+    try {
+      const raw = sessionStorage.getItem('ury_pos_draft_cart');
+      if (!raw) {
+        return;
+      }
+      const parsed = JSON.parse(raw) as OrderItem[];
+      if (Array.isArray(parsed) && parsed.length > 0 && get().activeOrders.length === 0) {
+        set({ activeOrders: parsed });
+      }
+    } catch {
+      sessionStorage.removeItem('ury_pos_draft_cart');
+    }
+  },
 })); 

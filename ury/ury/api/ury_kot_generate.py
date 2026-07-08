@@ -12,13 +12,36 @@ def load_json(data):
 
 
 # Create a list of order items from a list of input items
+def format_kot_item_name(item):
+    name = item.get("item_name") or ""
+    parts = []
+    variant = item.get("variant_label") or item.get("variant_name")
+    if variant:
+        parts.append(str(variant))
+    addon_labels = item.get("addon_labels")
+    if addon_labels:
+        if isinstance(addon_labels, str):
+            try:
+                addon_labels = json.loads(addon_labels)
+            except json.JSONDecodeError:
+                addon_labels = [addon_labels]
+        for label in addon_labels:
+            parts.append(f"+ {label}")
+    if not parts:
+        return name, ""
+    modifier_text = ", ".join(parts)
+    return f"{name} ({modifier_text})", modifier_text
+
+
 def create_order_items(items):
     order_items = []
     for item in items:
+        display_name, modifier_text = format_kot_item_name(item)
         order_item = {
             "item_code": item.get("item", item.get("item_code")),
             "qty": item["qty"],
-            "item_name": item["item_name"],
+            "item_name": display_name,
+            "modifier_text": modifier_text or item.get("modifier_text", ""),
             "comments": item.get("comment", item.get("comments", "")),
         }
         order_items.append(order_item)
@@ -50,6 +73,7 @@ def create_kot_doc(
             "customer_name": customer,
             "pos_profile": pos_profile_id,
             "comments": comments,
+            "allergy_note": pos_invoice.get("custom_allergy_note") or "",
             "type": kot_type,
             "naming_series": kot_naming_series,
             "production": production,
@@ -76,6 +100,7 @@ def create_kot_doc(
                 "item_name": item["item_name"],
                 "quantity": item["qty"],
                 "comments": item["comments"],
+                "modifier_text": item.get("modifier_text", ""),
                 "course":course
             },
         )
